@@ -1,75 +1,30 @@
 package com.example.aeron
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import ai.onnxruntime.OnnxTensor
-import ai.onnxruntime.OrtEnvironment
-import ai.onnxruntime.OrtSession
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.FloatBuffer
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.exp
-import kotlin.math.ln
-import kotlin.math.max
-import kotlin.math.pow
-import kotlin.math.sin
 
 class MainActivity : AppCompatActivity() {
 
-    companion object {
-        private const val RECORD_AUDIO_REQUEST_CODE = 101
-        private const val SAMPLE_RATE = 16000
-        private const val WINDOW_SAMPLES = 16000
-        private const val N_MELS = 40
-        private const val N_FFT = 512
-        private const val HOP_LENGTH = 160
-        private const val WIN_LENGTH = 400
-        private const val FRAMES = 101
-        private const val THRESHOLD = 0.85f
-    }
-
-    // ---------- AERON DESIGN ----------
-
+    // ---------- AERON COLORS ----------
     private val bg = Color.rgb(3, 6, 16)
-    private val surface = Color.rgb(8, 13, 27)
-    private val surface2 = Color.rgb(12, 19, 38)
-    private val surface3 = Color.rgb(17, 26, 49)
-
+    private val surface = Color.rgb(9, 14, 28)
+    private val surface2 = Color.rgb(14, 21, 40)
     private val cyan = Color.rgb(0, 225, 255)
-    private val blue = Color.rgb(74, 116, 255)
-    private val purple = Color.rgb(145, 88, 255)
-    private val green = Color.rgb(66, 235, 171)
-
+    private val blue = Color.rgb(78, 112, 255)
+    private val purple = Color.rgb(153, 86, 255)
     private val white = Color.WHITE
-    private val text = Color.rgb(226, 233, 247)
-    private val muted = Color.rgb(139, 153, 180)
-    private val border = Color.rgb(30, 49, 82)
+    private val text = Color.rgb(225, 232, 247)
+    private val muted = Color.rgb(137, 151, 179)
+    private val green = Color.rgb(70, 235, 170)
 
-    private lateinit var rootContainer: LinearLayout
-    private lateinit var statusText: TextView
-
-    // ---------- ONNX ----------
-
-    private var isListening = false
-    private var audioRecord: AudioRecord? = null
-    private var detectionThread: Thread? = null
-    private var ortEnvironment: OrtEnvironment? = null
-    private var ortSession: OrtSession? = null
+    private lateinit var root: FrameLayout
+    private lateinit var content: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,3015 +32,1381 @@ class MainActivity : AppCompatActivity() {
         window.statusBarColor = bg
         window.navigationBarColor = bg
 
-        copyAssetsIfNeeded()
+        buildShell()
         showHome()
-
-        if (
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.RECORD_AUDIO),
-                RECORD_AUDIO_REQUEST_CODE
-            )
-        } else {
-            startWakeWordDetection()
-        }
     }
 
-    // =========================================================
+    // ============================================================
+    // SHELL
+    // ============================================================
+
+    private fun buildShell() {
+
+        root = FrameLayout(this)
+        root.setBackgroundColor(bg)
+
+        val main = LinearLayout(this)
+        main.orientation = LinearLayout.VERTICAL
+        main.setBackgroundColor(bg)
+
+        root.addView(
+            main,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+
+        val header = LinearLayout(this)
+        header.orientation = LinearLayout.HORIZONTAL
+        header.gravity = Gravity.CENTER_VERTICAL
+        header.setPadding(dp(20), dp(16), dp(20), dp(10))
+
+        val brand = LinearLayout(this)
+        brand.orientation = LinearLayout.VERTICAL
+
+        val title = tv(
+            "AERON",
+            22f,
+            white,
+            Typeface.BOLD
+        )
+
+        val subtitle = tv(
+            "AERON CORE",
+            10f,
+            cyan,
+            Typeface.BOLD
+        )
+        subtitle.letterSpacing = 0.18f
+
+        brand.addView(title)
+        brand.addView(
+            subtitle,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+
+        header.addView(
+            brand,
+            LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+        )
+
+        val notification = circleButton("✦")
+        notification.setOnClickListener {
+            toast("AERON notifications")
+        }
+
+        val profile = circleButton("A")
+        profile.setOnClickListener {
+            showAccount()
+        }
+
+        header.addView(notification)
+        header.addView(space(8))
+        header.addView(profile)
+
+        main.addView(header)
+
+        content = LinearLayout(this)
+        content.orientation = LinearLayout.VERTICAL
+        content.setPadding(dp(18), dp(4), dp(18), dp(8))
+
+        val scroll = ScrollView(this)
+        scroll.isFillViewport = true
+        scroll.addView(content)
+
+        main.addView(
+            scroll,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        )
+
+        main.addView(bottomNavigation())
+        setContentView(root)
+    }
+
+    // ============================================================
     // HOME
-    // =========================================================
+    // ============================================================
 
     private fun showHome() {
 
-        rootContainer = baseScreen()
+        clear()
 
-        rootContainer.addView(homeTopBar())
-
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            overScrollMode = View.OVER_SCROLL_NEVER
-        }
-
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(18, 8, 18, 28)
-        }
-
-        // Hero
-
-        val hero = panel()
-
-        val coreRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val coreTexts = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        coreTexts.addView(
-            textView(
-                "AERON CORE",
-                cyan,
-                12f,
-                true
-            )
-        )
-
-        coreTexts.addView(
-            textView(
-                "Your AI, reimagined.",
-                white,
-                25f,
-                true
-            )
-        )
-
-        coreTexts.addView(
-            textView(
-                "Intelligent. Private. Always ready.",
+        content.addView(
+            tv(
+                "Good day.",
+                14f,
                 muted,
-                13f,
-                false
+                Typeface.NORMAL
             )
         )
 
-        coreRow.addView(
-            coreTexts,
-            LinearLayout.LayoutParams(0, -2, 1f)
+        content.addView(
+            tv(
+                "How can AERON help?",
+                29f,
+                white,
+                Typeface.BOLD
+            )
         )
 
-        val coreBadge = textView(
-            "● ONLINE",
-            green,
-            10f,
-            true
-        ).apply {
-            gravity = Gravity.CENTER
-            background = pill(green, 0.12f)
-            setPadding(12, 8, 12, 8)
-        }
+        content.addView(space(18))
 
-        coreRow.addView(coreBadge)
+        // ORB
+        val orbContainer = FrameLayout(this)
+        orbContainer.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(300)
+        )
 
-        hero.addView(coreRow)
+        val glow = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(
+                Color.rgb(12, 48, 80),
+                Color.rgb(30, 17, 65),
+                Color.rgb(4, 10, 24)
+            )
+        )
+        glow.cornerRadius = dp(28).toFloat()
+        orbContainer.background = glow
 
-        // Orb
+        val orb = TextView(this)
+        orb.text = "A"
+        orb.gravity = Gravity.CENTER
+        orb.textSize = 62f
+        orb.setTextColor(cyan)
+        orb.typeface = Typeface.create("sans-serif", Typeface.BOLD)
 
-        val orbArea = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                -1,
-                245
-            ).apply {
-                topMargin = 8
-            }
-        }
+        val orbBg = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(
+                Color.rgb(9, 45, 63),
+                Color.rgb(25, 19, 62)
+            )
+        )
+        orbBg.shape = GradientDrawable.OVAL
+        orbBg.setStroke(dp(2), cyan)
+        orb.background = orbBg
+        orb.elevation = dp(18).toFloat()
 
-        val outerOrb = TextView(this).apply {
-            text = "✦"
-            textSize = 78f
-            gravity = Gravity.CENTER
-            setTextColor(cyan)
-            background = orbBackground(230)
-            elevation = 12f
-        }
+        val orbSize = dp(150)
 
-        orbArea.addView(
-            outerOrb,
-            FrameLayout.LayoutParams(190, 190).apply {
+        orbContainer.addView(
+            orb,
+            FrameLayout.LayoutParams(orbSize, orbSize).apply {
                 gravity = Gravity.CENTER
             }
         )
 
-        val orbLabel = textView(
-            "AERON",
-            white,
+        val coreLabel = tv(
+            "AERON CORE",
             11f,
-            true
-        ).apply {
-            gravity = Gravity.CENTER
-            letterSpacing = 0.35f
-        }
+            cyan,
+            Typeface.BOLD
+        )
+        coreLabel.gravity = Gravity.CENTER
+        coreLabel.letterSpacing = 0.22f
 
-        orbArea.addView(
-            orbLabel,
-            FrameLayout.LayoutParams(-1, -2).apply {
-                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                bottomMargin = 8
+        orbContainer.addView(
+            coreLabel,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.BOTTOM
+                bottomMargin = dp(28)
             }
         )
 
-        hero.addView(orbArea)
+        content.addView(orbContainer)
 
-        statusText = textView(
-            "●  AERON is starting...",
-            green,
-            13f,
-            true
-        ).apply {
-            gravity = Gravity.CENTER
-            setPadding(0, 4, 0, 2)
-        }
+        content.addView(space(18))
 
-        hero.addView(statusText)
+        // STATUS
+        val status = panel()
 
-        content.addView(
-            hero,
-            margin(0, 8, 0, 18)
-        )
+        val statusTop = LinearLayout(this)
+        statusTop.orientation = LinearLayout.HORIZONTAL
+        statusTop.gravity = Gravity.CENTER_VERTICAL
 
-        // Quick Actions
+        val dot = TextView(this)
+        dot.text = "●"
+        dot.textSize = 12f
+        dot.setTextColor(green)
 
-        content.addView(
-            sectionTitle(
-                "Quick actions",
-                "AERON chooses the right tool automatically"
+        statusTop.addView(dot)
+        statusTop.addView(space(8))
+        statusTop.addView(
+            tv(
+                "AERON is ready",
+                14f,
+                text,
+                Typeface.BOLD
             )
         )
 
-        val actions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
+        status.addView(statusTop)
 
-        actions.addView(
-            quickAction("⌕", "Search") {
-                showChatWithPrompt("Search the web")
-            },
-            actionWeight()
-        )
-
-        actions.addView(
-            quickAction("✦", "Create") {
-                showChatWithPrompt("Create an image")
-            },
-            actionWeight()
-        )
-
-        actions.addView(
-            quickAction("▶", "Video") {
-                showChatWithPrompt("Create a video")
-            },
-            actionWeight()
-        )
-
-        actions.addView(
-            quickAction("＋", "File") {
-                toast("File picker coming next")
-            },
-            actionWeight()
-        )
-
-        content.addView(
-            actions,
-            margin(0, 10, 0, 20)
-        )
-
-        // Ask AERON
-
-        val ask = panel()
-
-        ask.addView(
-            textView(
-                "AERON CHAT",
-                cyan,
-                11f,
-                true
-            )
-        )
-
-        ask.addView(
-            textView(
-                "What can I help you with?",
-                white,
-                20f,
-                true
-            )
-        )
-
-        ask.addView(
-            textView(
-                "Ask anything. AERON will understand your intent.",
+        status.addView(
+            tv(
+                "Wake word: \"Hey AERON\"",
+                12f,
                 muted,
-                13f,
-                false
+                Typeface.NORMAL
             )
         )
 
-        val input = fakeInput(
-            "Message AERON..."
-        ) {
-            showChat()
-        }
+        content.addView(status)
 
-        ask.addView(
-            input,
-            margin(0, 14, 0, 0)
-        )
+        content.addView(space(18))
 
         content.addView(
-            ask,
-            margin(0, 0, 0, 20)
-        )
-
-        // Recent
-
-        content.addView(
-            sectionTitle(
-                "Recent",
-                "Your latest AERON activity"
-            )
-        )
-
-        content.addView(
-            recentItem(
-                "Welcome to AERON",
-                "Start your first conversation",
-                "✦"
-            ) {
-                showChat()
+            tv(
+                "QUICK ACTIONS",
+                11f,
+                muted,
+                Typeface.BOLD
+            ).apply {
+                letterSpacing = 0.16f
             }
         )
 
-        content.addView(
-            recentItem(
-                "Voice Assistant",
-                "Hey AERON wake word",
-                "◉"
+        content.addView(space(10))
+
+        val row1 = LinearLayout(this)
+        row1.orientation = LinearLayout.HORIZONTAL
+
+        row1.addView(
+            actionCard(
+                "⌕",
+                "Search",
+                "Find anything"
+            ) {
+                showChat("Search the web for ")
+            }
+        )
+
+        row1.addView(space(10))
+
+        row1.addView(
+            actionCard(
+                "◈",
+                "Create",
+                "Generate media"
+            ) {
+                showCreate()
+            }
+        )
+
+        content.addView(row1)
+
+        content.addView(space(10))
+
+        val row2 = LinearLayout(this)
+        row2.orientation = LinearLayout.HORIZONTAL
+
+        row2.addView(
+            actionCard(
+                "◉",
+                "Voice",
+                "Talk to AERON"
             ) {
                 showVoice()
             }
         )
 
+        row2.addView(space(10))
+
+        row2.addView(
+            actionCard(
+                "▣",
+                "Files",
+                "Analyze files"
+            ) {
+                toast("File analysis coming next")
+            }
+        )
+
+        content.addView(row2)
+
+        content.addView(space(20))
+
         content.addView(
-            recentItem(
-                "AERON Core",
-                "Customize your assistant",
-                "⚙"
-            ) {
-                showSettings()
+            tv(
+                "RECENT",
+                11f,
+                muted,
+                Typeface.BOLD
+            ).apply {
+                letterSpacing = 0.16f
             }
         )
 
-        scroll.addView(content)
+        content.addView(space(10))
 
-        rootContainer.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
+        recent(
+            "Welcome to AERON",
+            "Your futuristic AI companion",
+            "Today"
         )
 
-        rootContainer.addView(bottomNav("home"))
-
-        setContentView(rootContainer)
+        recent(
+            "AERON CORE",
+            "Ready for your next command",
+            "Today"
+        )
     }
 
-    // =========================================================
+    // ============================================================
     // CHAT
-    // =========================================================
+    // ============================================================
 
-    private fun showChat() {
-        showChatWithPrompt(null)
-    }
+    private fun showChat(prompt: String = "") {
 
-    private fun showChatWithPrompt(prompt: String?) {
+        clear()
 
-        rootContainer = baseScreen()
-
-        rootContainer.addView(
-            premiumTopBar(
+        content.addView(
+            tv(
                 "AERON",
-                "AI CHAT",
-                "⌄"
-            ) {
-                showHome()
-            }
+                28f,
+                white,
+                Typeface.BOLD
+            )
         )
 
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(18, 8, 18, 18)
-        }
+        content.addView(
+            tv(
+                "Intelligent conversation",
+                12f,
+                muted,
+                Typeface.NORMAL
+            )
+        )
 
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            overScrollMode = View.OVER_SCROLL_NEVER
-        }
-
-        val messages = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, 8, 0, 12)
-        }
+        content.addView(space(22))
 
         val welcome = panel()
 
         welcome.addView(
-            textView(
-                "AERON CORE",
+            tv(
+                "✦",
+                24f,
                 cyan,
-                11f,
-                true
+                Typeface.BOLD
             )
         )
+
+        welcome.addView(space(8))
 
         welcome.addView(
-            textView(
-                "How can I help?",
-                white,
-                26f,
-                true
+            tv(
+                if (prompt.isEmpty())
+                    "I'm ready. What would you like to do?"
+                else
+                    prompt,
+                17f,
+                text,
+                Typeface.NORMAL
             )
         )
 
-        welcome.addView(
-            textView(
-                "I can understand your request and choose the appropriate capability automatically.",
-                muted,
-                14f,
-                false
+        content.addView(welcome)
+
+        content.addView(space(16))
+
+        val suggestions = LinearLayout(this)
+        suggestions.orientation = LinearLayout.VERTICAL
+
+        suggestion("Explain something", "Ask AERON anything") {
+            toast("Ask your question in the composer")
+        }
+
+        suggestion("Search the web", "Get current information") {
+            toast("Web search ready")
+        }
+
+        suggestion("Create something", "Images, video and more") {
+            showCreate()
+        }
+
+        content.addView(suggestions)
+
+        content.addView(space(18))
+
+        val composer = LinearLayout(this)
+        composer.orientation = LinearLayout.HORIZONTAL
+        composer.gravity = Gravity.CENTER_VERTICAL
+
+        val input = EditText(this)
+        input.hint = "Message AERON..."
+        input.setHintTextColor(muted)
+        input.setTextColor(text)
+        input.textSize = 15f
+        input.singleLine = true
+        input.setPadding(dp(16), 0, dp(10), 0)
+        input.background = rounded(surface2, 26, dp(1), Color.rgb(36, 53, 85))
+
+        composer.addView(
+            input,
+            LinearLayout.LayoutParams(
+                0,
+                dp(54),
+                1f
             )
         )
 
-        messages.addView(
-            welcome,
-            margin(0, 4, 0, 14)
-        )
+        composer.addView(space(8))
 
-        if (prompt != null) {
-            messages.addView(
-                userMessage(prompt)
-            )
-
-            messages.addView(
-                aiMessage(
-                    "Ready.",
-                    "I've understood your request. Connect the corresponding AI service here to complete the action."
-                )
-            )
-        } else {
-            messages.addView(
-                aiMessage(
-                    "Hello 👋",
-                    "I'm AERON. Ask me anything."
-                )
-            )
-        }
-
-        // Suggestion chips
-
-        messages.addView(
-            textView(
-                "Try asking",
-                muted,
-                12f,
-                true
-            ),
-            margin(0, 10, 0, 5)
-        )
-
-        val suggestions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
-
-        suggestions.addView(
-            chip("Explain something") {
-                showChatWithPrompt("Explain something to me")
-            }
-        )
-
-        suggestions.addView(
-            chip("Search web") {
-                showChatWithPrompt("Search the web for")
-            }
-        )
-
-        messages.addView(
-            suggestions,
-            margin(0, 0, 0, 10)
-        )
-
-        scroll.addView(messages)
-
-        content.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
-
-        // Composer
-
-        val composer = panel().apply {
-            setPadding(12, 10, 12, 10)
-        }
-
-        val composerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val attach = iconCircle("＋") {
-            toast("File picker coming next")
-        }
-
-        composerRow.addView(attach)
-
-        val field = textView(
-            "Message AERON...",
-            muted,
-            15f,
-            false
-        ).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(12, 0, 8, 0)
-            setOnClickListener {
-                toast("Message input")
+        val send = circleButton("↑")
+        send.setOnClickListener {
+            val value = input.text.toString().trim()
+            if (value.isNotEmpty()) {
+                toast("AERON received: $value")
+                input.text.clear()
             }
         }
 
-        composerRow.addView(
-            field,
-            LinearLayout.LayoutParams(0, 52, 1f)
-        )
+        composer.addView(send)
 
-        composerRow.addView(
-            iconCircle("🎙") {
-                showVoice()
-            }
-        )
-
-        composerRow.addView(
-            iconCircle("↑") {
-                toast("Message sent")
-            }
-        )
-
-        composer.addView(composerRow)
-
-        content.addView(
-            composer,
-            margin(0, 8, 0, 4)
-        )
-
-        rootContainer.addView(content)
-
-        rootContainer.addView(bottomNav("chat"))
-
-        setContentView(rootContainer)
+        content.addView(composer)
     }
 
-    // =========================================================
+    // ============================================================
     // VOICE
-    // =========================================================
+    // ============================================================
 
     private fun showVoice() {
 
-        rootContainer = baseScreen()
+        clear()
 
-        rootContainer.addView(
-            premiumTopBar(
-                "AERON",
+        content.addView(
+            tv(
                 "VOICE",
-                "◉"
-            ) {
-                showHome()
-            }
-        )
-
-        val scroll = ScrollView(this)
-
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(20, 15, 20, 30)
-        }
-
-        content.addView(
-            textView(
-                "VOICE CONTROL",
-                cyan,
-                11f,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        content.addView(
-            textView(
-                "Talk to AERON",
+                28f,
                 white,
-                29f,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            }
+                Typeface.BOLD
+            )
         )
 
         content.addView(
-            textView(
-                "Say “Hey AERON” to wake your assistant.",
-                muted,
-                14f,
-                false
-            ).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        // Large orb
-
-        val orb = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                280,
-                280
-            ).apply {
-                topMargin = 25
-                bottomMargin = 25
-            }
-        }
-
-        val glow = TextView(this).apply {
-            text = ""
-            background = orbBackground(280)
-            alpha = 0.28f
-        }
-
-        orb.addView(
-            glow,
-            FrameLayout.LayoutParams(280, 280)
-        )
-
-        val core = TextView(this).apply {
-            text = "✦"
-            textSize = 92f
-            gravity = Gravity.CENTER
-            setTextColor(cyan)
-            background = orbBackground(210)
-            elevation = 15f
-        }
-
-        orb.addView(
-            core,
-            FrameLayout.LayoutParams(210, 210).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        orb.addView(
-            textView(
-                "AERON",
-                white,
+            tv(
+                "Speak naturally with AERON",
                 12f,
-                true
+                muted,
+                Typeface.NORMAL
+            )
+        )
+
+        content.addView(space(30))
+
+        val voiceBox = FrameLayout(this)
+        voiceBox.background = rounded(
+            surface,
+            30,
+            dp(1),
+            Color.rgb(30, 47, 80)
+        )
+
+        voiceBox.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(390)
+        )
+
+        val voiceOrb = TextView(this)
+        voiceOrb.text = "A"
+        voiceOrb.gravity = Gravity.CENTER
+        voiceOrb.textSize = 58f
+        voiceOrb.setTextColor(white)
+        voiceOrb.typeface = Typeface.DEFAULT_BOLD
+
+        val orbBg = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(cyan, purple)
+        )
+        orbBg.shape = GradientDrawable.OVAL
+        orbBg.setStroke(dp(3), Color.WHITE)
+        voiceOrb.background = orbBg
+
+        voiceBox.addView(
+            voiceOrb,
+            FrameLayout.LayoutParams(
+                dp(145),
+                dp(145)
             ).apply {
-                gravity = Gravity.CENTER
-                letterSpacing = 0.4f
-            },
-            FrameLayout.LayoutParams(-1, -2).apply {
                 gravity = Gravity.CENTER
             }
         )
 
-        content.addView(orb)
+        val listening = tv(
+            "LISTENING READY",
+            11f,
+            cyan,
+            Typeface.BOLD
+        )
+        listening.gravity = Gravity.CENTER
+        listening.letterSpacing = 0.16f
 
-        val state = panel()
+        voiceBox.addView(
+            listening,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.BOTTOM
+                bottomMargin = dp(48)
+            }
+        )
 
-        state.addView(
-            textView(
-                "WAKE WORD STATUS",
-                cyan,
+        content.addView(voiceBox)
+
+        content.addView(space(20))
+
+        val wake = panel()
+
+        wake.addView(
+            tv(
+                "WAKE WORD",
                 11f,
-                true
-            )
+                muted,
+                Typeface.BOLD
+            ).apply {
+                letterSpacing = 0.15f
+            }
         )
 
-        val statusRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        statusRow.addView(
-            textView(
-                "●",
-                green,
-                20f,
-                true
-            )
-        )
-
-        statusRow.addView(
-            textView(
+        wake.addView(
+            tv(
                 "Hey AERON",
+                21f,
                 white,
-                18f,
-                true
-            ),
-            LinearLayout.LayoutParams(0, -2, 1f).apply {
-                leftMargin = 10
-            }
-        )
-
-        statusRow.addView(
-            textView(
-                "85%",
-                cyan,
-                13f,
-                true
+                Typeface.BOLD
             )
         )
 
-        state.addView(
-            statusRow,
-            margin(0, 10, 0, 0)
-        )
-
-        state.addView(
-            textView(
-                "ONNX neural wake-word detection is active.",
-                muted,
+        wake.addView(
+            tv(
+                "AERON can listen for your custom wake phrase.",
                 12f,
-                false
-            ),
-            margin(0, 5, 0, 0)
-        )
-
-        content.addView(
-            state,
-            margin(0, 0, 0, 12)
-        )
-
-        val test = bigButton(
-            "🎙   Test microphone"
-        ) {
-            toast(
-                if (isListening)
-                    "Microphone is listening"
-                else
-                    "Microphone is starting"
+                muted,
+                Typeface.NORMAL
             )
-        }
-
-        content.addView(test)
-
-        scroll.addView(content)
-
-        rootContainer.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
-        rootContainer.addView(bottomNav("voice"))
-
-        setContentView(rootContainer)
+        content.addView(wake)
     }
 
-    // =========================================================
+    // ============================================================
+    // CREATE
+    // ============================================================
+
+    private fun showCreate() {
+
+        clear()
+
+        content.addView(
+            tv(
+                "CREATE",
+                28f,
+                white,
+                Typeface.BOLD
+            )
+        )
+
+        content.addView(
+            tv(
+                "Bring your ideas to life",
+                12f,
+                muted,
+                Typeface.NORMAL
+            )
+        )
+
+        content.addView(space(22))
+
+        createCard(
+            "✦",
+            "Image",
+            "Generate stunning visuals"
+        )
+
+        createCard(
+            "▶",
+            "Video",
+            "Create AI video"
+        )
+
+        createCard(
+            "◇",
+            "Creative",
+            "Turn ideas into something new"
+        )
+    }
+
+    // ============================================================
     // MEMORY
-    // =========================================================
+    // ============================================================
 
     private fun showMemory() {
 
-        rootContainer = baseScreen()
+        clear()
 
-        rootContainer.addView(
-            premiumTopBar(
-                "AERON",
-                "MEMORY VAULT",
-                "◈"
-            ) {
-                showHome()
-            }
-        )
-
-        val scroll = ScrollView(this)
-
-        val list = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(18, 10, 18, 28)
-        }
-
-        val hero = panel()
-
-        hero.addView(
-            textView(
-                "MEMORY VAULT",
-                cyan,
-                11f,
-                true
-            )
-        )
-
-        hero.addView(
-            textView(
-                "AERON remembers what matters.",
+        content.addView(
+            tv(
+                "MEMORY",
+                28f,
                 white,
-                23f,
-                true
+                Typeface.BOLD
             )
         )
 
-        hero.addView(
-            textView(
-                "Your memories stay under your control.",
-                muted,
-                13f,
-                false
-            )
-        )
-
-        val memoryState = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        memoryState.addView(
-            textView(
-                "●",
-                green,
-                17f,
-                true
-            )
-        )
-
-        memoryState.addView(
-            textView(
-                "Memory protection active",
-                text,
-                13f,
-                true
-            ),
-            LinearLayout.LayoutParams(0, -2, 1f).apply {
-                leftMargin = 8
-            }
-        )
-
-        memoryState.addView(
-            textView(
-                "ON",
-                green,
-                10f,
-                true
-            ).apply {
-                background = pill(green, 0.12f)
-                setPadding(10, 6, 10, 6)
-            }
-        )
-
-        hero.addView(
-            memoryState,
-            margin(0, 18, 0, 0)
-        )
-
-        list.addView(
-            hero,
-            margin(0, 5, 0, 18)
-        )
-
-        list.addView(
-            memoryFeature(
-                "🧠",
-                "Long-term memory",
-                "Save useful preferences and information."
-            )
-        )
-
-        list.addView(
-            memoryFeature(
-                "🔐",
-                "Privacy protection",
-                "Sensitive information is protected."
-            )
-        )
-
-        list.addView(
-            memoryFeature(
-                "🗑",
-                "Memory controls",
-                "Review and delete memories whenever you want."
-            )
-        )
-
-        val empty = panel()
-
-        empty.gravity = Gravity.CENTER
-
-        empty.addView(
-            textView(
-                "◈",
-                muted,
-                35f,
-                false
-            ).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        empty.addView(
-            textView(
-                "No memories yet",
-                white,
-                17f,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        empty.addView(
-            textView(
-                "Your saved memories will appear here.",
-                muted,
+        content.addView(
+            tv(
+                "Your AERON memory vault",
                 12f,
-                false
+                muted,
+                Typeface.NORMAL
+            )
+        )
+
+        content.addView(space(20))
+
+        val vault = panel()
+
+        vault.addView(
+            tv(
+                "MEMORY VAULT",
+                11f,
+                cyan,
+                Typeface.BOLD
             ).apply {
-                gravity = Gravity.CENTER
+                letterSpacing = 0.15f
             }
         )
 
-        list.addView(
-            empty,
-            margin(0, 15, 0, 0)
+        vault.addView(space(8))
+
+        vault.addView(
+            tv(
+                "Your saved preferences and useful information will appear here.",
+                15f,
+                text,
+                Typeface.NORMAL
+            )
         )
 
-        scroll.addView(list)
+        content.addView(vault)
 
-        rootContainer.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
+        content.addView(space(14))
 
-        rootContainer.addView(bottomNav("memory"))
-
-        setContentView(rootContainer)
+        memoryItem("Preferences", "Personal preferences")
+        memoryItem("Conversations", "Important remembered context")
+        memoryItem("Privacy", "Control what AERON remembers")
     }
 
-    // =========================================================
+    // ============================================================
     // SETTINGS
-    // =========================================================
+    // ============================================================
 
     private fun showSettings() {
 
-        rootContainer = baseScreen()
+        clear()
 
-        rootContainer.addView(
-            premiumTopBar(
-                "AERON",
+        content.addView(
+            tv(
                 "SETTINGS",
-                "⚙"
-            ) {
-                showHome()
-            }
+                28f,
+                white,
+                Typeface.BOLD
+            )
         )
 
-        val scroll = ScrollView(this)
+        content.addView(
+            tv(
+                "Customize your AERON experience",
+                12f,
+                muted,
+                Typeface.NORMAL
+            )
+        )
 
-        val list = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(18, 6, 18, 28)
+        content.addView(space(22))
+
+        settingSection("ACCOUNT")
+        settingItem("Account", "Sign in with Google, Facebook or phone") {
+            showAccount()
         }
 
-        list.addView(
-            settingsHeader(
-                "Account",
-                "Manage your AERON identity"
-            )
-        )
+        settingSection("AERON CORE")
+        settingItem("AERON CORE", "AI personality and intelligence") {
+            toast("AERON CORE settings")
+        }
 
-        list.addView(
-            settingsItem(
-                "👤",
-                "Account",
-                "Phone • Google • Facebook • Profile"
-            ) {
-                showAccount()
-            }
-        )
+        settingSection("VOICE & WAKE WORD")
+        settingItem("Voice & Wake Word", "Hey AERON detection") {
+            showVoice()
+        }
 
-        list.addView(
-            settingsHeader(
-                "AERON",
-                "Customize how your assistant behaves"
-            )
-        )
+        settingSection("PERSONALIZATION")
+        settingItem("Appearance", "Theme and visual experience") {
+            toast("Appearance settings")
+        }
 
-        list.addView(
-            settingsItem(
-                "✦",
-                "AERON CORE",
-                "Personality • Intelligence • Response style"
-            ) {
-                toast("AERON CORE customization")
-            }
-        )
+        settingItem("Memory", "Manage AERON memory") {
+            showMemory()
+        }
 
-        list.addView(
-            settingsItem(
-                "🎙",
-                "Voice & Wake Word",
-                "Hey AERON • Voice • Sensitivity"
-            ) {
-                showVoice()
-            }
-        )
+        settingItem("Chat History", "Saved conversations") {
+            toast("Chat history")
+        }
 
-        list.addView(
-            settingsItem(
-                "🧠",
-                "Memory",
-                "Memory Vault • Saved information"
-            ) {
-                showMemory()
-            }
-        )
+        settingSection("REGION")
+        settingItem("Language & Region", "Choose your language") {
+            toast("Language settings")
+        }
 
-        list.addView(
-            settingsItem(
-                "◉",
-                "Chat History",
-                "Search • Rename • Delete • Restore"
-            ) {
-                toast("Chat History")
-            }
-        )
+        settingSection("SECURITY")
+        settingItem("Privacy & Security", "Your data and permissions") {
+            toast("Privacy settings")
+        }
 
-        list.addView(
-            settingsHeader(
-                "Personalization",
-                "Make AERON feel like yours"
-            )
-        )
-
-        list.addView(
-            settingsItem(
-                "◈",
-                "Appearance",
-                "Theme • Animations • Orb style"
-            ) {
-                toast("Appearance settings")
-            }
-        )
-
-        list.addView(
-            settingsItem(
-                "🌐",
-                "Language & Region",
-                "Automatic language • All languages"
-            ) {
-                toast("Language settings")
-            }
-        )
-
-        list.addView(
-            settingsHeader(
-                "Security",
-                "Control your privacy"
-            )
-        )
-
-        list.addView(
-            settingsItem(
-                "🔒",
-                "Privacy & Security",
-                "Permissions • Data controls • Privacy"
-            ) {
-                toast("Privacy settings")
-            }
-        )
-
-        list.addView(
-            settingsHeader(
-                "More",
-                "Information and support"
-            )
-        )
-
-        list.addView(
-            settingsItem(
-                "ⓘ",
-                "About AERON",
-                "Version 1.0 • Help • Support"
-            ) {
-                toast("AERON v1.0")
-            }
-        )
-
-        scroll.addView(list)
-
-        rootContainer.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
-
-        rootContainer.addView(bottomNav("settings"))
-
-        setContentView(rootContainer)
+        settingSection("ABOUT")
+        settingItem("About AERON", "Version and information") {
+            toast("AERON v1.0")
+        }
     }
 
-    // =========================================================
-    // ACCOUNT / LOGIN
-    // =========================================================
+    // ============================================================
+    // ACCOUNT
+    // ============================================================
 
     private fun showAccount() {
 
-        rootContainer = baseScreen()
-
-        rootContainer.addView(
-            premiumTopBar(
-                "AERON",
-                "ACCOUNT",
-                "👤"
-            ) {
-                showSettings()
-            }
-        )
-
-        val scroll = ScrollView(this)
-
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(20, 15, 20, 30)
-        }
-
-        val logo = TextView(this).apply {
-            text = "✦"
-            textSize = 58f
-            gravity = Gravity.CENTER
-            setTextColor(cyan)
-            background = orbBackground(150)
-        }
+        clear()
 
         content.addView(
-            logo,
-            LinearLayout.LayoutParams(150, 150).apply {
-                bottomMargin = 20
-            }
-        )
-
-        content.addView(
-            textView(
-                "Welcome to AERON",
+            tv(
+                "WELCOME TO AERON",
+                25f,
                 white,
-                27f,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            }
+                Typeface.BOLD
+            )
         )
 
         content.addView(
-            textView(
+            tv(
                 "Sign in to sync your AERON experience.",
+                13f,
                 muted,
-                14f,
-                false
-            ).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        content.addView(
-            loginButton(
-                "📱",
-                "Continue with Phone"
-            ) {
-                toast("Phone OTP setup comes next")
-            },
-            margin(0, 28, 0, 0)
-        )
-
-        content.addView(
-            loginButton(
-                "G",
-                "Continue with Google"
+                Typeface.NORMAL
             )
         )
 
-        content.addView(
-            loginButton(
-                "f",
-                "Continue with Facebook"
-            )
-        )
+        content.addView(space(25))
 
-        val divider = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        divider.addView(
-            line(),
-            LinearLayout.LayoutParams(0, 1, 1f)
-        )
-
-        divider.addView(
-            textView(
-                "  OR  ",
-                muted,
-                11f,
-                false
-            )
-        )
-
-        divider.addView(
-            line(),
-            LinearLayout.LayoutParams(0, 1, 1f)
-        )
-
-        content.addView(
-            divider,
-            margin(0, 12, 0, 12)
-        )
-
-        val guest = bigButton(
-            "Continue as Guest"
+        loginButton(
+            "G",
+            "Continue with Google"
         ) {
-            showHome()
+            toast("Google sign-in will be connected next")
         }
 
-        content.addView(guest)
+        loginButton(
+            "f",
+            "Continue with Facebook"
+        ) {
+            toast("Facebook sign-in will be connected next")
+        }
 
-        content.addView(
-            textView(
-                "Guest mode keeps your assistant local on this device.",
-                muted,
+        loginButton(
+            "☎",
+            "Continue with phone"
+        ) {
+            toast("Phone verification will be connected next")
+        }
+
+        content.addView(space(25))
+
+        val note = panel()
+
+        note.addView(
+            tv(
+                "AERON ACCOUNT",
                 11f,
-                false
-            ).apply {
-                gravity = Gravity.CENTER
-            },
-            margin(0, 10, 0, 0)
-        )
-
-        scroll.addView(content)
-
-        rootContainer.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
-
-        rootContainer.addView(bottomNav("settings"))
-
-        setContentView(rootContainer)
-    }
-
-    // =========================================================
-    // TOP BAR
-    // =========================================================
-
-    private fun homeTopBar(): View {
-
-        val bar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(20, 17, 18, 10)
-        }
-
-        val brand = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val mark = TextView(this).apply {
-            text = "✦"
-            textSize = 23f
-            setTextColor(cyan)
-            gravity = Gravity.CENTER
-        }
-
-        brand.addView(
-            mark,
-            LinearLayout.LayoutParams(36, 42)
-        )
-
-        brand.addView(
-            brandText(
-                "AERON",
-                "INTELLIGENCE, EVOLVED"
-            ),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        bar.addView(
-            brand,
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        bar.addView(
-            smallIcon("⌕") {
-                showChatWithPrompt("Search the web")
-            }
-        )
-
-        bar.addView(
-            smallIcon("⚙") {
-                showSettings()
-            }
-        )
-
-        return bar
-    }
-
-    private fun premiumTopBar(
-        title: String,
-        subtitle: String,
-        icon: String,
-        back: () -> Unit
-    ): View {
-
-        val bar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(18, 15, 18, 10)
-        }
-
-        val backButton = smallIcon("‹", back)
-
-        bar.addView(backButton)
-
-        bar.addView(
-            brandText(title, subtitle),
-            LinearLayout.LayoutParams(0, -2, 1f).apply {
-                leftMargin = 10
-            }
-        )
-
-        bar.addView(
-            TextView(this).apply {
-                text = icon
-                textSize = 18f
-                gravity = Gravity.CENTER
-                setTextColor(cyan)
-                background = pill(cyan, 0.08f)
-                setPadding(10, 8, 10, 8)
-            }
-        )
-
-        return bar
-    }
-
-    private fun brandText(
-        title: String,
-        subtitle: String
-    ): View {
-
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        box.addView(
-            textView(
-                title,
-                white,
-                19f,
-                true
+                cyan,
+                Typeface.BOLD
             )
         )
 
-        box.addView(
-            textView(
-                subtitle,
+        note.addView(
+            tv(
+                "Login UI is ready. Real authentication will be connected separately.",
+                13f,
                 muted,
-                9f,
-                true
+                Typeface.NORMAL
             )
         )
 
-        return box
+        content.addView(note)
     }
 
-    // =========================================================
-    // BOTTOM NAV
-    // =========================================================
+    // ============================================================
+    // BOTTOM NAVIGATION
+    // ============================================================
 
-    private fun bottomNav(active: String): View {
+    private fun bottomNavigation(): View {
 
-        val nav = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            setPadding(8, 8, 8, 10)
-            background = topBorder()
-        }
+        val nav = LinearLayout(this)
+        nav.orientation = LinearLayout.HORIZONTAL
+        nav.gravity = Gravity.CENTER
+        nav.setPadding(dp(10), dp(8), dp(10), dp(10))
+        nav.background = rounded(surface, 0, 0, Color.TRANSPARENT)
 
-        nav.addView(
-            navItem("⌂", "Home", active == "home") {
-                showHome()
-            },
-            navWeight()
-        )
+        nav.addView(navButton("⌂", "Home") {
+            showHome()
+        })
 
-        nav.addView(
-            navItem("◉", "Chat", active == "chat") {
-                showChat()
-            },
-            navWeight()
-        )
+        nav.addView(navButton("✦", "Chat") {
+            showChat()
+        })
 
-        nav.addView(
-            navItem("✦", "Voice", active == "voice") {
-                showVoice()
-            },
-            navWeight()
-        )
+        nav.addView(navButton("◉", "Voice") {
+            showVoice()
+        })
 
-        nav.addView(
-            navItem("◈", "Memory", active == "memory") {
-                showMemory()
-            },
-            navWeight()
-        )
+        nav.addView(navButton("◇", "Memory") {
+            showMemory()
+        })
 
-        nav.addView(
-            navItem("⚙", "Settings", active == "settings") {
-                showSettings()
-            },
-            navWeight()
-        )
+        nav.addView(navButton("☰", "Settings") {
+            showSettings()
+        })
 
         return nav
     }
 
-    private fun navItem(
+    private fun navButton(
         icon: String,
-        title: String,
-        active: Boolean,
-        click: () -> Unit
+        label: String,
+        action: () -> Unit
     ): View {
 
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(4, 4, 4, 3)
-            setOnClickListener {
-                click()
-            }
-        }
+        val box = LinearLayout(this)
+        box.orientation = LinearLayout.VERTICAL
+        box.gravity = Gravity.CENTER
+        box.setPadding(dp(8), dp(6), dp(8), dp(4))
+        box.setOnClickListener { action() }
 
-        val iconView = textView(
+        val i = tv(
             icon,
-            if (active) cyan else muted,
-            19f,
-            true
-        ).apply {
-            gravity = Gravity.CENTER
-        }
+            20f,
+            cyan,
+            Typeface.BOLD
+        )
+        i.gravity = Gravity.CENTER
 
-        if (active) {
-            iconView.background = pill(cyan, 0.10f)
-            iconView.setPadding(12, 5, 12, 5)
-        }
+        val t = tv(
+            label,
+            9f,
+            muted,
+            Typeface.BOLD
+        )
+        t.gravity = Gravity.CENTER
 
-        box.addView(iconView)
+        box.addView(i)
+        box.addView(t)
 
-        box.addView(
-            textView(
-                title,
-                if (active) white else muted,
-                9f,
-                active
-            ).apply {
-                gravity = Gravity.CENTER
-            }
+        box.layoutParams = LinearLayout.LayoutParams(
+            0,
+            dp(58),
+            1f
         )
 
         return box
     }
 
-    // =========================================================
+    // ============================================================
     // UI COMPONENTS
-    // =========================================================
-
-    private fun baseScreen(): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(bg)
-        }
-    }
+    // ============================================================
 
     private fun panel(): LinearLayout {
 
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(18, 18, 18, 18)
-            background = rounded(
-                surface,
-                24f,
-                border
-            )
-            elevation = 2f
-        }
-    }
-
-    private fun sectionTitle(
-        title: String,
-        subtitle: String
-    ): View {
-
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        box.addView(
-            textView(
-                title,
-                white,
-                19f,
-                true
-            )
+        val p = LinearLayout(this)
+        p.orientation = LinearLayout.VERTICAL
+        p.setPadding(dp(16), dp(16), dp(16), dp(16))
+        p.background = rounded(
+            surface,
+            20,
+            dp(1),
+            Color.rgb(29, 46, 78)
         )
 
-        box.addView(
-            textView(
-                subtitle,
-                muted,
-                11f,
-                false
-            )
+        p.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
         )
 
-        return box
+        return p
     }
 
-    private fun quickAction(
+    private fun actionCard(
         icon: String,
-        title: String,
-        click: () -> Unit
-    ): View {
-
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(6, 13, 6, 13)
-            background = rounded(
-                surface2,
-                19f,
-                border
-            )
-            setOnClickListener {
-                click()
-            }
-        }
-
-        box.addView(
-            textView(
-                icon,
-                cyan,
-                22f,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        box.addView(
-            textView(
-                title,
-                text,
-                10f,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        return box
-    }
-
-    private fun fakeInput(
-        hint: String,
-        click: () -> Unit
-    ): View {
-
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(13, 7, 7, 7)
-            background = rounded(
-                surface3,
-                17f,
-                border
-            )
-            setOnClickListener {
-                click()
-            }
-        }
-
-        box.addView(
-            textView(
-                hint,
-                muted,
-                14f,
-                false
-            ),
-            LinearLayout.LayoutParams(0, 50, 1f)
-        )
-
-        box.addView(
-            iconCircle("↑") {
-                click()
-            }
-        )
-
-        return box
-    }
-
-    private fun recentItem(
         title: String,
         subtitle: String,
-        icon: String,
-        click: () -> Unit
+        action: () -> Unit
     ): View {
 
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(14, 13, 12, 13)
-            background = rounded(
-                surface,
-                18f,
-                border
-            )
-            setOnClickListener {
-                click()
-            }
-        }
+        val card = LinearLayout(this)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(15), dp(15), dp(15), dp(14))
+        card.background = rounded(
+            surface,
+            20,
+            dp(1),
+            Color.rgb(28, 46, 79)
+        )
+        card.setOnClickListener { action() }
 
-        box.addView(
-            TextView(this).apply {
-                text = icon
-                textSize = 19f
-                gravity = Gravity.CENTER
-                setTextColor(cyan)
-                background = pill(cyan, 0.08f)
-                setPadding(10, 8, 10, 8)
-            }
+        val iconView = tv(
+            icon,
+            25f,
+            cyan,
+            Typeface.BOLD
         )
 
-        val texts = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
+        card.addView(iconView)
 
-        texts.addView(
-            textView(
+        card.addView(space(10))
+
+        card.addView(
+            tv(
                 title,
-                text,
-                14f,
-                true
-            )
-        )
-
-        texts.addView(
-            textView(
-                subtitle,
-                muted,
-                11f,
-                false
-            )
-        )
-
-        box.addView(
-            texts,
-            LinearLayout.LayoutParams(0, -2, 1f).apply {
-                leftMargin = 12
-            }
-        )
-
-        box.addView(
-            textView(
-                "›",
-                muted,
-                24f,
-                false
-            )
-        )
-
-        box.layoutParams = margin(0, 7, 0, 0)
-
-        return box
-    }
-
-    private fun userMessage(message: String): View {
-
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.END
-        }
-
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(15, 12, 15, 12)
-            background = rounded(
-                Color.rgb(18, 38, 68),
-                20f,
-                Color.rgb(37, 75, 125)
-            )
-        }
-
-        card.addView(
-            textView(
-                "YOU",
-                cyan,
-                10f,
-                true
-            )
-        )
-
-        card.addView(
-            textView(
-                message,
-                text,
-                14f,
-                false
-            )
-        )
-
-        box.addView(card)
-
-        box.layoutParams = margin(35, 5, 0, 5)
-
-        return box
-    }
-
-    private fun aiMessage(
-        title: String,
-        message: String
-    ): View {
-
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.TOP
-        }
-
-        val mark = TextView(this).apply {
-            text = "✦"
-            textSize = 18f
-            gravity = Gravity.CENTER
-            setTextColor(cyan)
-            background = pill(cyan, 0.08f)
-            setPadding(10, 7, 10, 7)
-        }
-
-        box.addView(mark)
-
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(15, 12, 15, 12)
-            background = rounded(
-                surface,
-                20f,
-                border
-            )
-        }
-
-        card.addView(
-            textView(
-                title,
-                cyan,
-                11f,
-                true
-            )
-        )
-
-        card.addView(
-            textView(
-                message,
-                text,
-                14f,
-                false
-            )
-        )
-
-        box.addView(
-            card,
-            LinearLayout.LayoutParams(0, -2, 1f).apply {
-                leftMargin = 9
-            }
-        )
-
-        box.layoutParams = margin(0, 5, 35, 5)
-
-        return box
-    }
-
-    private fun chip(
-        title: String,
-        click: () -> Unit
-    ): View {
-
-        return TextView(this).apply {
-            text = title
-            textSize = 10f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            setPadding(13, 9, 13, 9)
-            background = rounded(
-                surface2,
                 15f,
-                border
-            )
-            setOnClickListener {
-                click()
-            }
-            layoutParams = LinearLayout.LayoutParams(
-                -2,
-                -2
-            ).apply {
-                rightMargin = 7
-            }
-        }
-    }
-
-    private fun memoryFeature(
-        icon: String,
-        title: String,
-        subtitle: String
-    ): View {
-
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(15, 13, 15, 13)
-            background = rounded(
-                surface,
-                18f,
-                border
-            )
-        }
-
-        box.addView(
-            textView(
-                icon,
-                cyan,
-                22f,
-                false
-            ).apply {
-                gravity = Gravity.CENTER
-            },
-            LinearLayout.LayoutParams(45, 45)
-        )
-
-        val texts = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        texts.addView(
-            textView(
-                title,
                 white,
-                14f,
-                true
+                Typeface.BOLD
             )
         )
 
-        texts.addView(
-            textView(
+        card.addView(
+            tv(
                 subtitle,
-                muted,
                 11f,
-                false
-            )
-        )
-
-        box.addView(
-            texts,
-            LinearLayout.LayoutParams(0, -2, 1f).apply {
-                leftMargin = 10
-            }
-        )
-
-        box.layoutParams = margin(0, 6, 0, 0)
-
-        return box
-    }
-
-    private fun settingsHeader(
-        title: String,
-        subtitle: String
-    ): View {
-
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(3, 15, 3, 4)
-        }
-
-        box.addView(
-            textView(
-                title.uppercase(),
-                cyan,
-                10f,
-                true
-            )
-        )
-
-        box.addView(
-            textView(
-                subtitle,
                 muted,
-                10f,
-                false
+                Typeface.NORMAL
             )
         )
 
-        return box
+        card.layoutParams = LinearLayout.LayoutParams(
+            0,
+            dp(125),
+            1f
+        )
+
+        return card
     }
 
-    private fun settingsItem(
-        icon: String,
+    private fun recent(
         title: String,
         subtitle: String,
-        click: () -> Unit
-    ): View {
+        time: String
+    ) {
 
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(14, 13, 12, 13)
-            background = rounded(
-                surface,
-                19f,
-                border
-            )
-            setOnClickListener {
-                click()
-            }
-        }
-
-        box.addView(
-            TextView(this).apply {
-                text = icon
-                textSize = 19f
-                gravity = Gravity.CENTER
-                setTextColor(cyan)
-                background = pill(cyan, 0.08f)
-                setPadding(9, 8, 9, 8)
-            }
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        row.setPadding(dp(14), dp(13), dp(14), dp(13))
+        row.background = rounded(
+            surface,
+            16,
+            dp(1),
+            Color.rgb(24, 39, 67)
         )
 
-        val texts = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
+        val icon = tv(
+            "✦",
+            18f,
+            cyan,
+            Typeface.BOLD
+        )
+
+        row.addView(icon)
+        row.addView(space(12))
+
+        val texts = LinearLayout(this)
+        texts.orientation = LinearLayout.VERTICAL
 
         texts.addView(
-            textView(
+            tv(
                 title,
-                white,
                 14f,
-                true
+                text,
+                Typeface.BOLD
             )
         )
 
         texts.addView(
-            textView(
+            tv(
                 subtitle,
+                11f,
                 muted,
-                10f,
-                false
+                Typeface.NORMAL
             )
         )
 
-        box.addView(
+        row.addView(
             texts,
-            LinearLayout.LayoutParams(0, -2, 1f).apply {
-                leftMargin = 11
-            }
-        )
-
-        box.addView(
-            textView(
-                "›",
-                muted,
-                25f,
-                false
+            LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
             )
         )
 
-        box.layoutParams = margin(0, 5, 0, 0)
+        row.addView(
+            tv(
+                time,
+                10f,
+                muted,
+                Typeface.NORMAL
+            )
+        )
 
-        return box
+        val params = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.bottomMargin = dp(8)
+
+        content.addView(row, params)
+    }
+
+    private fun suggestion(
+        title: String,
+        subtitle: String,
+        action: () -> Unit
+    ) {
+
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        row.setPadding(dp(15), dp(13), dp(15), dp(13))
+        row.background = rounded(
+            surface,
+            16,
+            dp(1),
+            Color.rgb(27, 43, 72)
+        )
+        row.setOnClickListener { action() }
+
+        val icon = tv(
+            "✦",
+            18f,
+            purple,
+            Typeface.BOLD
+        )
+
+        row.addView(icon)
+        row.addView(space(12))
+
+        val textBox = LinearLayout(this)
+        textBox.orientation = LinearLayout.VERTICAL
+
+        textBox.addView(
+            tv(title, 14f, text, Typeface.BOLD)
+        )
+
+        textBox.addView(
+            tv(subtitle, 11f, muted, Typeface.NORMAL)
+        )
+
+        row.addView(textBox)
+
+        val params = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.bottomMargin = dp(8)
+
+        content.addView(row, params)
+    }
+
+    private fun createCard(
+        icon: String,
+        title: String,
+        subtitle: String
+    ) {
+
+        val card = panel()
+        card.setOnClickListener {
+            toast("$title creation ready")
+        }
+
+        card.addView(
+            tv(
+                icon,
+                28f,
+                cyan,
+                Typeface.BOLD
+            )
+        )
+
+        card.addView(
+            tv(
+                title,
+                19f,
+                white,
+                Typeface.BOLD
+            )
+        )
+
+        card.addView(
+            tv(
+                subtitle,
+                12f,
+                muted,
+                Typeface.NORMAL
+            )
+        )
+
+        val params = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(110)
+        )
+        params.bottomMargin = dp(12)
+
+        content.addView(card, params)
+    }
+
+    private fun memoryItem(
+        title: String,
+        subtitle: String
+    ) {
+
+        settingItem(title, subtitle) {
+            toast(title)
+        }
+    }
+
+    private fun settingSection(title: String) {
+
+        content.addView(space(15))
+
+        val t = tv(
+            title,
+            10f,
+            cyan,
+            Typeface.BOLD
+        )
+        t.letterSpacing = 0.18f
+
+        content.addView(t)
+        content.addView(space(7))
+    }
+
+    private fun settingItem(
+        title: String,
+        subtitle: String,
+        action: () -> Unit
+    ) {
+
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        row.setPadding(dp(16), dp(14), dp(12), dp(14))
+        row.background = rounded(
+            surface,
+            18,
+            dp(1),
+            Color.rgb(28, 44, 73)
+        )
+        row.setOnClickListener { action() }
+
+        val textBox = LinearLayout(this)
+        textBox.orientation = LinearLayout.VERTICAL
+
+        textBox.addView(
+            tv(
+                title,
+                15f,
+                text,
+                Typeface.BOLD
+            )
+        )
+
+        textBox.addView(
+            tv(
+                subtitle,
+                11f,
+                muted,
+                Typeface.NORMAL
+            )
+        )
+
+        row.addView(
+            textBox,
+            LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+        )
+
+        row.addView(
+            tv(
+                "›",
+                27f,
+                muted,
+                Typeface.NORMAL
+            )
+        )
+
+        val params = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.bottomMargin = dp(8)
+
+        content.addView(row, params)
     }
 
     private fun loginButton(
         icon: String,
         title: String,
-        click: (() -> Unit)? = null
-    ): View {
+        action: () -> Unit
+    ) {
 
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(15, 12, 13, 12)
-            background = rounded(
-                surface,
-                19f,
-                border
-            )
-            setOnClickListener {
-                click?.invoke()
-            }
-        }
+        val button = LinearLayout(this)
+        button.orientation = LinearLayout.HORIZONTAL
+        button.gravity = Gravity.CENTER_VERTICAL
+        button.setPadding(dp(18), 0, dp(18), 0)
+        button.background = rounded(
+            surface2,
+            18,
+            dp(1),
+            Color.rgb(39, 57, 91)
+        )
+        button.setOnClickListener { action() }
 
-        box.addView(
-            textView(
-                icon,
-                cyan,
-                19f,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            },
-            LinearLayout.LayoutParams(45, 45)
+        val i = tv(
+            icon,
+            20f,
+            white,
+            Typeface.BOLD
+        )
+        i.gravity = Gravity.CENTER
+
+        button.addView(
+            i,
+            LinearLayout.LayoutParams(dp(35), dp(55))
         )
 
-        box.addView(
-            textView(
+        button.addView(space(10))
+
+        button.addView(
+            tv(
                 title,
-                white,
                 14f,
-                true
-            ),
-            LinearLayout.LayoutParams(0, -2, 1f).apply {
-                leftMargin = 10
-            }
-        )
-
-        box.addView(
-            textView(
-                "›",
-                muted,
-                24f,
-                false
+                text,
+                Typeface.BOLD
             )
         )
 
-        box.layoutParams = margin(0, 6, 0, 0)
+        val params = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(55)
+        )
+        params.bottomMargin = dp(10)
 
-        return box
+        content.addView(button, params)
     }
 
-    private fun bigButton(
-        title: String,
-        click: () -> Unit
-    ): View {
+    private fun circleButton(symbol: String): TextView {
 
-        return TextView(this).apply {
-            text = title
-            textSize = 14f
-            setTextColor(white)
-            gravity = Gravity.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(15, 15, 15, 15)
-            background = rounded(
-                surface2,
-                18f,
-                border
-            )
-            setOnClickListener {
-                click()
-            }
-        }
+        val v = TextView(this)
+        v.text = symbol
+        v.gravity = Gravity.CENTER
+        v.textSize = 17f
+        v.setTextColor(white)
+        v.typeface = Typeface.DEFAULT_BOLD
+        v.background = rounded(
+            surface2,
+            50,
+            dp(1),
+            Color.rgb(37, 55, 89)
+        )
+
+        v.layoutParams = LinearLayout.LayoutParams(
+            dp(44),
+            dp(44)
+        )
+
+        return v
     }
 
-    private fun iconCircle(
-        symbol: String,
-        click: () -> Unit
-    ): View {
-
-        return TextView(this).apply {
-            text = symbol
-            textSize = 18f
-            gravity = Gravity.CENTER
-            setTextColor(white)
-            background = rounded(
-                surface3,
-                17f,
-                border
-            )
-            setPadding(9, 5, 9, 5)
-            setOnClickListener {
-                click()
-            }
-        }
-    }
-
-    private fun smallIcon(
-        symbol: String,
-        click: () -> Unit
-    ): View {
-
-        return TextView(this).apply {
-            text = symbol
-            textSize = 18f
-            gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            background = rounded(
-                surface2,
-                15f,
-                border
-            )
-            setPadding(9, 7, 9, 7)
-            setOnClickListener {
-                click()
-            }
-            layoutParams = LinearLayout.LayoutParams(
-                42,
-                42
-            ).apply {
-                leftMargin = 5
-            }
-        }
-    }
-
-    private fun textView(
+    private fun tv(
         value: String,
-        color: Int,
         size: Float,
-        bold: Boolean
+        color: Int,
+        style: Int
     ): TextView {
 
-        return TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(color)
-            setPadding(0, 2, 0, 2)
+        val v = TextView(this)
+        v.text = value
+        v.textSize = size
+        v.setTextColor(color)
+        v.typeface = Typeface.create("sans-serif", style)
+        v.includeFontPadding = false
 
-            if (bold) {
-                typeface = Typeface.DEFAULT_BOLD
-            }
-        }
+        return v
     }
-
-    // =========================================================
-    // DRAWABLES
-    // =========================================================
 
     private fun rounded(
         color: Int,
-        radius: Float,
+        radius: Int,
+        strokeWidth: Int,
         strokeColor: Int
     ): GradientDrawable {
 
-        return GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = radius
-            setStroke(1, strokeColor)
+        val g = GradientDrawable()
+        g.setColor(color)
+        g.cornerRadius = dp(radius).toFloat()
+
+        if (strokeWidth > 0) {
+            g.setStroke(strokeWidth, strokeColor)
         }
+
+        return g
     }
 
-    private fun pill(
-        color: Int,
-        alpha: Float
-    ): GradientDrawable {
+    private fun space(px: Int): View {
 
-        val a = (alpha * 255).toInt().coerceIn(0, 255)
-
-        return GradientDrawable().apply {
-            setColor(
-                Color.argb(
-                    a,
-                    Color.red(color),
-                    Color.green(color),
-                    Color.blue(color)
-                )
-            )
-            cornerRadius = 100f
-        }
-    }
-
-    private fun orbBackground(
-        size: Int
-    ): GradientDrawable {
-
-        return GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
-            intArrayOf(
-                Color.rgb(8, 45, 65),
-                Color.rgb(21, 27, 68),
-                Color.rgb(36, 17, 70)
-            )
-        ).apply {
-            shape = GradientDrawable.OVAL
-            setStroke(
-                2,
-                Color.rgb(0, 170, 220)
+        return Space(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                dp(px),
+                dp(px)
             )
         }
     }
 
-    private fun topBorder(): GradientDrawable {
-
-        return GradientDrawable().apply {
-            setColor(Color.rgb(5, 10, 22))
-            setStroke(
-                1,
-                Color.rgb(23, 39, 67)
-            )
-        }
+    private fun clear() {
+        content.removeAllViews()
     }
 
-    private fun line(): View {
-
-        return View(this).apply {
-            setBackgroundColor(border)
-        }
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
-
-    // =========================================================
-    // LAYOUT
-    // =========================================================
-
-    private fun margin(
-        left: Int,
-        top: Int,
-        right: Int,
-        bottom: Int
-    ): LinearLayout.LayoutParams {
-
-        return LinearLayout.LayoutParams(
-            -1,
-            -2
-        ).apply {
-            setMargins(
-                left,
-                top,
-                right,
-                bottom
-            )
-        }
-    }
-
-    private fun actionWeight(): LinearLayout.LayoutParams {
-
-        return LinearLayout.LayoutParams(
-            0,
-            -2,
-            1f
-        ).apply {
-            setMargins(3, 0, 3, 0)
-        }
-    }
-
-    private fun navWeight(): LinearLayout.LayoutParams {
-
-        return LinearLayout.LayoutParams(
-            0,
-            -2,
-            1f
-        )
-    }
-
-    // =========================================================
-    // TOAST
-    // =========================================================
 
     private fun toast(message: String) {
-        Toast.makeText(
-            this,
-            message,
-            Toast.LENGTH_SHORT
-        ).show()
-    }
-
-    // =========================================================
-    // ONNX / WAKE WORD
-    // =========================================================
-
-    private fun copyAssetsIfNeeded() {
-
-        val assetNames = arrayOf(
-            "wake.int8.onnx",
-            "wake.json"
-        )
-
-        for (name in assetNames) {
-
-            val file = File(
-                filesDir,
-                name
-            )
-
-            if (!file.exists()) {
-
-                try {
-
-                    assets.open(name).use { input ->
-
-                        FileOutputStream(file).use { output ->
-
-                            input.copyTo(output)
-                        }
-                    }
-
-                } catch (_: Exception) {
-                }
-            }
-        }
-    }
-
-    private fun startWakeWordDetection() {
-
-        try {
-
-            val modelFile =
-                File(
-                    filesDir,
-                    "wake.int8.onnx"
-                )
-
-            if (!modelFile.exists()) {
-
-                updateStatus(
-                    "Wake-word model not found"
-                )
-
-                return
-            }
-
-            ortEnvironment =
-                OrtEnvironment.getEnvironment()
-
-            ortSession =
-                ortEnvironment!!.createSession(
-                    modelFile.absolutePath,
-                    OrtSession.SessionOptions()
-                )
-
-        } catch (e: Exception) {
-
-            updateStatus(
-                "Model error: ${e.message}"
-            )
-
-            return
-        }
-
-        val minBuffer =
-            AudioRecord.getMinBufferSize(
-                SAMPLE_RATE,
-                AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT
-            )
-
-        val bufferSize =
-            max(
-                minBuffer,
-                SAMPLE_RATE / 2
-            )
-
-        if (
-            ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-
-        try {
-
-            audioRecord =
-                AudioRecord(
-                    MediaRecorder.AudioSource.MIC,
-                    SAMPLE_RATE,
-                    AudioFormat.CHANNEL_IN_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT,
-                    bufferSize
-                )
-
-            audioRecord?.startRecording()
-
-            isListening = true
-
-            updateStatus(
-                "●  AERON is listening\nSay: Hey AERON"
-            )
-
-            detectionThread = Thread {
-
-                val circularBuffer =
-                    ShortArray(WINDOW_SAMPLES)
-
-                var position = 0
-                var filled = 0
-
-                val readBuffer =
-                    ShortArray(320)
-
-                while (isListening) {
-
-                    val count =
-                        audioRecord?.read(
-                            readBuffer,
-                            0,
-                            readBuffer.size
-                        ) ?: 0
-
-                    if (count <= 0) continue
-
-                    for (i in 0 until count) {
-
-                        circularBuffer[position] =
-                            readBuffer[i]
-
-                        position++
-
-                        if (position >= WINDOW_SAMPLES) {
-                            position = 0
-                        }
-
-                        if (filled < WINDOW_SAMPLES) {
-                            filled++
-                        }
-                    }
-
-                    if (filled >= WINDOW_SAMPLES) {
-
-                        val audio =
-                            ShortArray(WINDOW_SAMPLES)
-
-                        var index = position
-
-                        for (i in 0 until WINDOW_SAMPLES) {
-
-                            audio[i] =
-                                circularBuffer[index]
-
-                            index++
-
-                            if (index >= WINDOW_SAMPLES) {
-                                index = 0
-                            }
-                        }
-
-                        val probability =
-                            runModel(audio)
-
-                        if (
-                            probability >= THRESHOLD
-                        ) {
-
-                            runOnUiThread {
-
-                                if (::statusText.isInitialized) {
-
-                                    statusText.text =
-                                        "✦  AERON detected!\n\nHey AERON 👋"
-
-                                    statusText.setTextColor(
-                                        cyan
-                                    )
-                                }
-                            }
-
-                            Thread.sleep(1500)
-
-                            updateStatus(
-                                "●  AERON is listening\nSay: Hey AERON"
-                            )
-                        }
-                    }
-                }
-            }
-
-            detectionThread?.start()
-
-        } catch (e: Exception) {
-
-            updateStatus(
-                "Microphone error: ${e.message}"
-            )
-        }
-    }
-
-    private fun runModel(
-        audio: ShortArray
-    ): Float {
-
-        val session =
-            ortSession ?: return 0f
-
-        val environment =
-            ortEnvironment ?: return 0f
-
-        try {
-
-            val mel =
-                createMelSpectrogram(audio)
-
-            val inputTensor =
-                OnnxTensor.createTensor(
-                    environment,
-                    FloatBuffer.wrap(mel),
-                    longArrayOf(
-                        1,
-                        N_MELS.toLong(),
-                        FRAMES.toLong()
-                    )
-                )
-
-            val inputs =
-                mapOf(
-                    "mel" to inputTensor
-                )
-
-            val result =
-                session.run(inputs)
-
-            val output =
-                result[0].value
-
-            val logit =
-                when (output) {
-
-                    is FloatArray ->
-                        output[0]
-
-                    is Array<*> -> {
-
-                        val first =
-                            output[0]
-
-                        when (first) {
-
-                            is FloatArray ->
-                                first[0]
-
-                            else ->
-                                0f
-                        }
-                    }
-
-                    else ->
-                        0f
-                }
-
-            inputTensor.close()
-            result.close()
-
-            return sigmoid(logit)
-
-        } catch (_: Exception) {
-
-            return 0f
-        }
-    }
-
-    private fun createMelSpectrogram(
-        audio: ShortArray
-    ): FloatArray {
-
-        val result =
-            FloatArray(
-                N_MELS * FRAMES
-            )
-
-        val samples =
-            FloatArray(audio.size)
-
-        var peak = 0f
-
-        for (i in audio.indices) {
-
-            samples[i] =
-                audio[i] / 32768f
-
-            peak =
-                max(
-                    peak,
-                    kotlin.math.abs(
-                        samples[i]
-                    )
-                )
-        }
-
-        if (peak > 0.0001f) {
-
-            val targetPeak =
-                10f.pow(
-                    -3f / 20f
-                )
-
-            val gain =
-                targetPeak / peak
-
-            for (i in samples.indices) {
-                samples[i] *= gain
-            }
-        }
-
-        val melFilters =
-            createMelFilters()
-
-        val fftReal =
-            FloatArray(N_FFT)
-
-        val fftImag =
-            FloatArray(N_FFT)
-
-        for (frame in 0 until FRAMES) {
-
-            val center =
-                frame * HOP_LENGTH
-
-            for (i in 0 until N_FFT) {
-                fftReal[i] = 0f
-                fftImag[i] = 0f
-            }
-
-            for (i in 0 until WIN_LENGTH) {
-
-                val sampleIndex =
-                    center +
-                            i -
-                            WIN_LENGTH / 2
-
-                if (
-                    sampleIndex >= 0 &&
-                    sampleIndex < samples.size
-                ) {
-
-                    val window =
-                        0.5f *
-                                (
-                                        1f -
-                                                cos(
-                                                    2.0 *
-                                                            PI *
-                                                            i /
-                                                            (WIN_LENGTH - 1)
-                                                ).toFloat()
-                                        )
-
-                    fftReal[i] =
-                        samples[sampleIndex] *
-                                window
-                }
-            }
-
-            fft(
-                fftReal,
-                fftImag
-            )
-
-            val power =
-                FloatArray(
-                    N_FFT / 2 + 1
-                )
-
-            for (k in power.indices) {
-
-                power[k] =
-                    (
-                            fftReal[k] *
-                                    fftReal[k] +
-                                    fftImag[k] *
-                                    fftImag[k]
-                            ) / N_FFT
-            }
-
-            for (m in 0 until N_MELS) {
-
-                var energy = 0f
-
-                for (k in power.indices) {
-
-                    energy +=
-                        power[k] *
-                                melFilters[m][k]
-                }
-
-                energy =
-                    max(
-                        energy,
-                        1e-10f
-                    )
-
-                val logEnergy =
-                    10f *
-                            (
-                                    ln(
-                                        energy.toDouble()
-                                    ) /
-                                            ln(10.0)
-                                    ).toFloat()
-
-                result[
-                    m * FRAMES + frame
-                ] =
-                    max(
-                        -80f,
-                        logEnergy
-                    )
-            }
-        }
-
-        return result
-    }
-
-    private fun createMelFilters():
-            Array<FloatArray> {
-
-        val filters =
-            Array(N_MELS) {
-                FloatArray(
-                    N_FFT / 2 + 1
-                )
-            }
-
-        val lowMel =
-            hzToMel(0f)
-
-        val highMel =
-            hzToMel(8000f)
-
-        val points =
-            IntArray(
-                N_MELS + 2
-            )
-
-        for (i in points.indices) {
-
-            val mel =
-                lowMel +
-                        (highMel - lowMel) *
-                        i /
-                        (N_MELS + 1)
-
-            val hz =
-                melToHz(mel)
-
-            points[i] =
-                (
-                        (N_FFT + 1) *
-                                hz /
-                                SAMPLE_RATE
-                        ).toInt()
-        }
-
-        for (m in 1..N_MELS) {
-
-            val left =
-                points[m - 1]
-
-            val center =
-                points[m]
-
-            val right =
-                points[m + 1]
-
-            for (k in left until center) {
-
-                if (
-                    center > left &&
-                    k in filters[m - 1].indices
-                ) {
-
-                    filters[m - 1][k] =
-                        (
-                                k - left
-                                ).toFloat() /
-                                (
-                                        center - left
-                                        )
-                }
-            }
-
-            for (k in center until right) {
-
-                if (
-                    right > center &&
-                    k in filters[m - 1].indices
-                ) {
-
-                    filters[m - 1][k] =
-                        (
-                                right - k
-                                ).toFloat() /
-                                (
-                                        right - center
-                                        )
-                }
-            }
-        }
-
-        return filters
-    }
-
-    private fun hzToMel(
-        hz: Float
-    ): Float {
-
-        return (
-                2595.0 *
-                        log10(
-                            1.0 +
-                                    hz /
-                                    700.0
-                        )
-                ).toFloat()
-    }
-
-    private fun melToHz(
-        mel: Float
-    ): Float {
-
-        return (
-                700.0 *
-                        (
-                                10.0.pow(
-                                    mel /
-                                            2595.0
-                                ) - 1.0
-                                )
-                ).toFloat()
-    }
-
-    private fun log10(
-        value: Double
-    ): Double {
-
-        return ln(value) /
-                ln(10.0)
-    }
-
-    private fun sigmoid(
-        x: Float
-    ): Float {
-
-        return if (x >= 0) {
-
-            val z =
-                exp(-x)
-
-            1f /
-                    (
-                            1f + z
-                            )
-
-        } else {
-
-            val z =
-                exp(x)
-
-            z /
-                    (
-                            1f + z
-                            )
-        }
-    }
-
-    private fun fft(
-        real: FloatArray,
-        imag: FloatArray
-    ) {
-
-        val n =
-            real.size
-
-        var j = 0
-
-        for (i in 1 until n) {
-
-            var bit =
-                n shr 1
-
-            while (
-                j and bit != 0
-            ) {
-
-                j =
-                    j xor bit
-
-                bit =
-                    bit shr 1
-            }
-
-            j =
-                j xor bit
-
-            if (i < j) {
-
-                val tempR =
-                    real[i]
-
-                real[i] =
-                    real[j]
-
-                real[j] =
-                    tempR
-
-                val tempI =
-                    imag[i]
-
-                imag[i] =
-                    imag[j]
-
-                imag[j] =
-                    tempI
-            }
-        }
-
-        var length = 2
-
-        while (length <= n) {
-
-            val angle =
-                -2.0 *
-                        PI /
-                        length
-
-            val wLenR =
-                cos(angle)
-                    .toFloat()
-
-            val wLenI =
-                sin(angle)
-                    .toFloat()
-
-            var i = 0
-
-            while (i < n) {
-
-                var wR = 1f
-                var wI = 0f
-
-                for (
-                    k in 0 until length / 2
-                ) {
-
-                    val even =
-                        i + k
-
-                    val odd =
-                        i +
-                                k +
-                                length / 2
-
-                    val oddR =
-                        real[odd]
-
-                    val oddI =
-                        imag[odd]
-
-                    val tempR =
-                        wR *
-                                oddR -
-                                wI *
-                                oddI
-
-                    val tempI =
-                        wR *
-                                oddI +
-                                wI *
-                                oddR
-
-                    real[odd] =
-                        real[even] -
-                                tempR
-
-                    imag[odd] =
-                        imag[even] -
-                                tempI
-
-                    real[even] +=
-                        tempR
-
-                    imag[even] +=
-                        tempI
-
-                    val nextWR =
-                        wR *
-                                wLenR -
-                                wI *
-                                wLenI
-
-                    wI =
-                        wR *
-                                wLenI +
-                                wI *
-                                wLenR
-
-                    wR =
-                        nextWR
-                }
-
-                i += length
-            }
-
-            length =
-                length shl 1
-        }
-    }
-
-    private fun updateStatus(
-        text: String
-    ) {
-
-        runOnUiThread {
-
-            if (::statusText.isInitialized) {
-
-                statusText.text =
-                    text
-
-                statusText.setTextColor(
-                    green
-                )
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-
-        super.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults
-        )
-
-        if (
-            requestCode ==
-            RECORD_AUDIO_REQUEST_CODE &&
-            grantResults.isNotEmpty() &&
-            grantResults[0] ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-
-            startWakeWordDetection()
-
-        } else {
-
-            Toast.makeText(
-                this,
-                "Microphone permission required",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
-
-    override fun onDestroy() {
-
-        isListening = false
-
-        try {
-            audioRecord?.stop()
-        } catch (_: Exception) {
-        }
-
-        audioRecord?.release()
-
-        audioRecord = null
-
-        ortSession?.close()
-
-        ortSession = null
-
-        super.onDestroy()
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }
