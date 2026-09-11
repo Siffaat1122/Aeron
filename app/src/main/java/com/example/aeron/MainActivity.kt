@@ -1818,7 +1818,7 @@ class MainActivity : AppCompatActivity() {
         return TextView(this).apply {
             text = title
             textSize = 10f
-            setTextColor(text)
+            setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
             setPadding(13, 9, 13, 9)
             background = rounded(
@@ -2119,7 +2119,7 @@ class MainActivity : AppCompatActivity() {
             text = symbol
             textSize = 18f
             gravity = Gravity.CENTER
-            setTextColor(text)
+            setTextColor(Color.WHITE)
             background = rounded(
                 surface2,
                 15f,
