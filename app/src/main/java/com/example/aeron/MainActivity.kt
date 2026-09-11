@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
@@ -42,29 +43,39 @@ class MainActivity : AppCompatActivity() {
         private const val THRESHOLD = 0.85f
     }
 
-    private val bg = Color.rgb(4, 8, 20)
-    private val card = Color.rgb(10, 20, 39)
-    private val card2 = Color.rgb(13, 28, 53)
-    private val cyan = Color.rgb(0, 220, 255)
-    private val green = Color.rgb(70, 230, 170)
+    // ---------- AERON DESIGN ----------
+
+    private val bg = Color.rgb(3, 6, 16)
+    private val surface = Color.rgb(8, 13, 27)
+    private val surface2 = Color.rgb(12, 19, 38)
+    private val surface3 = Color.rgb(17, 26, 49)
+
+    private val cyan = Color.rgb(0, 225, 255)
+    private val blue = Color.rgb(74, 116, 255)
+    private val purple = Color.rgb(145, 88, 255)
+    private val green = Color.rgb(66, 235, 171)
+
     private val white = Color.WHITE
-    private val muted = Color.rgb(155, 170, 195)
+    private val text = Color.rgb(226, 233, 247)
+    private val muted = Color.rgb(139, 153, 180)
+    private val border = Color.rgb(30, 49, 82)
+
+    private lateinit var rootContainer: LinearLayout
+    private lateinit var statusText: TextView
+
+    // ---------- ONNX ----------
 
     private var isListening = false
     private var audioRecord: AudioRecord? = null
     private var detectionThread: Thread? = null
-
-    private lateinit var statusText: TextView
-    private lateinit var rootContainer: LinearLayout
-
     private var ortEnvironment: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        window.statusBarColor = Color.rgb(2, 5, 14)
-        window.navigationBarColor = Color.rgb(2, 5, 14)
+        window.statusBarColor = bg
+        window.navigationBarColor = bg
 
         copyAssetsIfNeeded()
         showHome()
@@ -85,231 +96,282 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // =========================
+    // =========================================================
     // HOME
-    // =========================
+    // =========================================================
 
     private fun showHome() {
 
         rootContainer = baseScreen()
 
-        val top = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(20, 18, 20, 10)
+        rootContainer.addView(homeTopBar())
+
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            overScrollMode = View.OVER_SCROLL_NEVER
         }
-
-        top.addView(
-            verticalText(
-                "AERON",
-                "YOUR AI ASSISTANT",
-                23f
-            ),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        top.addView(
-            iconButton("⌕") {
-                toast("AERON Search")
-            }
-        )
-
-        top.addView(
-            iconButton("⚙") {
-                showSettings()
-            }
-        )
-
-        rootContainer.addView(top)
-
-        val scroll = ScrollView(this)
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(18, 10, 18, 24)
+            setPadding(18, 8, 18, 28)
         }
 
-        val hero = cardView()
+        // Hero
 
-        hero.addView(
-            label(
+        val hero = panel()
+
+        val coreRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        val coreTexts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        coreTexts.addView(
+            textView(
                 "AERON CORE",
                 cyan,
-                true,
-                13f
+                12f,
+                true
             )
         )
 
-        hero.addView(
-            label(
-                "Hey AERON 👋",
+        coreTexts.addView(
+            textView(
+                "Your AI, reimagined.",
                 white,
-                true,
-                28f
+                25f,
+                true
             )
         )
 
-        hero.addView(
-            label(
-                "Your intelligent assistant is ready.",
+        coreTexts.addView(
+            textView(
+                "Intelligent. Private. Always ready.",
                 muted,
-                false,
-                15f
+                13f,
+                false
             )
         )
 
-        val logo = ImageView(this).apply {
-            setImageResource(R.drawable.aeron_icon_512)
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-            setPadding(55, 24, 55, 20)
+        coreRow.addView(
+            coreTexts,
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+
+        val coreBadge = textView(
+            "● ONLINE",
+            green,
+            10f,
+            true
+        ).apply {
+            gravity = Gravity.CENTER
+            background = pill(green, 0.12f)
+            setPadding(12, 8, 12, 8)
         }
 
-        hero.addView(
-            logo,
-            LinearLayout.LayoutParams(-1, 190)
+        coreRow.addView(coreBadge)
+
+        hero.addView(coreRow)
+
+        // Orb
+
+        val orbArea = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                -1,
+                245
+            ).apply {
+                topMargin = 8
+            }
+        }
+
+        val outerOrb = TextView(this).apply {
+            text = "✦"
+            textSize = 78f
+            gravity = Gravity.CENTER
+            setTextColor(cyan)
+            background = orbBackground(230)
+            elevation = 12f
+        }
+
+        orbArea.addView(
+            outerOrb,
+            FrameLayout.LayoutParams(190, 190).apply {
+                gravity = Gravity.CENTER
+            }
         )
 
-        statusText = label(
-            "●  Starting AERON...",
-            green,
-            true,
-            14f
+        val orbLabel = textView(
+            "AERON",
+            white,
+            11f,
+            true
+        ).apply {
+            gravity = Gravity.CENTER
+            letterSpacing = 0.35f
+        }
+
+        orbArea.addView(
+            orbLabel,
+            FrameLayout.LayoutParams(-1, -2).apply {
+                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                bottomMargin = 8
+            }
         )
+
+        hero.addView(orbArea)
+
+        statusText = textView(
+            "●  AERON is starting...",
+            green,
+            13f,
+            true
+        ).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, 4, 0, 2)
+        }
 
         hero.addView(statusText)
 
         content.addView(
             hero,
-            marginParams(0, 8, 0, 18)
+            margin(0, 8, 0, 18)
         )
 
+        // Quick Actions
+
         content.addView(
-            label(
-                "Quick Actions",
-                white,
-                true,
-                19f
+            sectionTitle(
+                "Quick actions",
+                "AERON chooses the right tool automatically"
             )
         )
 
         val actions = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 10, 0, 14)
         }
 
         actions.addView(
-            actionCard("⌕", "Search") {
-                toast("AERON Search")
+            quickAction("⌕", "Search") {
+                showChatWithPrompt("Search the web")
             },
-            weight()
+            actionWeight()
         )
 
         actions.addView(
-            actionCard("▣", "Image") {
-                toast("Image generation")
+            quickAction("✦", "Create") {
+                showChatWithPrompt("Create an image")
             },
-            weight()
+            actionWeight()
         )
 
         actions.addView(
-            actionCard("▶", "Video") {
-                toast("Video generation")
+            quickAction("▶", "Video") {
+                showChatWithPrompt("Create a video")
             },
-            weight()
+            actionWeight()
         )
 
         actions.addView(
-            actionCard("＋", "File") {
-                toast("File upload")
+            quickAction("＋", "File") {
+                toast("File picker coming next")
             },
-            weight()
+            actionWeight()
         )
 
-        content.addView(actions)
+        content.addView(
+            actions,
+            margin(0, 10, 0, 20)
+        )
 
-        val chat = cardView()
+        // Ask AERON
 
-        chat.addView(
-            label(
+        val ask = panel()
+
+        ask.addView(
+            textView(
                 "AERON CHAT",
                 cyan,
-                true,
-                13f
+                11f,
+                true
             )
         )
 
-        chat.addView(
-            label(
-                "Ask AERON anything...",
+        ask.addView(
+            textView(
+                "What can I help you with?",
+                white,
+                20f,
+                true
+            )
+        )
+
+        ask.addView(
+            textView(
+                "Ask anything. AERON will understand your intent.",
                 muted,
-                false,
-                16f
+                13f,
+                false
             )
         )
 
-        val chatRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 14, 0, 0)
+        val input = fakeInput(
+            "Message AERON..."
+        ) {
+            showChat()
         }
 
-        chatRow.addView(
-            iconButton("🎙") {
-                showVoice()
-            },
-            weight()
-        )
-
-        chatRow.addView(
-            iconButton("➤") {
-                showChat()
-            },
-            weight()
-        )
-
-        chat.addView(chatRow)
-
-        content.addView(
-            chat,
-            marginParams(0, 0, 0, 18)
+        ask.addView(
+            input,
+            margin(0, 14, 0, 0)
         )
 
         content.addView(
-            label(
-                "Recent Chats",
-                white,
-                true,
-                19f
+            ask,
+            margin(0, 0, 0, 20)
+        )
+
+        // Recent
+
+        content.addView(
+            sectionTitle(
+                "Recent",
+                "Your latest AERON activity"
             )
         )
 
         content.addView(
-            simpleCard(
+            recentItem(
                 "Welcome to AERON",
-                "Start your first conversation"
+                "Start your first conversation",
+                "✦"
             ) {
                 showChat()
             }
         )
 
         content.addView(
-            simpleCard(
+            recentItem(
+                "Voice Assistant",
+                "Hey AERON wake word",
+                "◉"
+            ) {
+                showVoice()
+            }
+        )
+
+        content.addView(
+            recentItem(
                 "AERON Core",
-                "Configure your assistant"
+                "Customize your assistant",
+                "⚙"
             ) {
                 showSettings()
             }
         )
 
-        content.addView(
-            simpleCard(
-                "Voice Assistant",
-                "Hey AERON wake word"
-            ) {
-                showVoice()
-            }
-        )
-
         scroll.addView(content)
 
         rootContainer.addView(
@@ -317,256 +379,423 @@ class MainActivity : AppCompatActivity() {
             LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
-        rootContainer.addView(
-            bottomNav("home")
-        )
+        rootContainer.addView(bottomNav("home"))
 
         setContentView(rootContainer)
     }
 
-    // =========================
+    // =========================================================
     // CHAT
-    // =========================
+    // =========================================================
 
     private fun showChat() {
+        showChatWithPrompt(null)
+    }
+
+    private fun showChatWithPrompt(prompt: String?) {
 
         rootContainer = baseScreen()
 
         rootContainer.addView(
-            topBar("Chat") {
+            premiumTopBar(
+                "AERON",
+                "AI CHAT",
+                "⌄"
+            ) {
                 showHome()
             }
         )
 
-        val scroll = ScrollView(this)
-
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(18, 10, 18, 20)
+            setPadding(18, 8, 18, 18)
         }
 
-        val welcome = cardView()
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
+
+        val messages = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 8, 0, 12)
+        }
+
+        val welcome = panel()
 
         welcome.addView(
-            label(
+            textView(
                 "AERON CORE",
                 cyan,
-                true,
-                13f
-            )
-        )
-
-        welcome.addView(
-            label(
-                "How can I help?",
-                white,
-                true,
-                25f
-            )
-        )
-
-        welcome.addView(
-            label(
-                "Ask anything. AERON will choose the right capability automatically.",
-                muted,
-                false,
-                14f
-            )
-        )
-
-        content.addView(
-            welcome,
-            marginParams(0, 5, 0, 12)
-        )
-
-        content.addView(
-            messageCard(
-                "AERON",
-                "I'm ready. Start a conversation whenever you want.",
+                11f,
                 true
             )
         )
 
-        val input = cardView()
-
-        input.addView(
-            label(
-                "Message AERON...",
-                muted,
-                false,
-                16f
+        welcome.addView(
+            textView(
+                "How can I help?",
+                white,
+                26f,
+                true
             )
         )
 
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 12, 0, 0)
+        welcome.addView(
+            textView(
+                "I can understand your request and choose the appropriate capability automatically.",
+                muted,
+                14f,
+                false
+            )
+        )
+
+        messages.addView(
+            welcome,
+            margin(0, 4, 0, 14)
+        )
+
+        if (prompt != null) {
+            messages.addView(
+                userMessage(prompt)
+            )
+
+            messages.addView(
+                aiMessage(
+                    "Ready.",
+                    "I've understood your request. Connect the corresponding AI service here to complete the action."
+                )
+            )
+        } else {
+            messages.addView(
+                aiMessage(
+                    "Hello 👋",
+                    "I'm AERON. Ask me anything."
+                )
+            )
         }
 
-        row.addView(
-            iconButton("📎") {
-                toast("File picker coming next")
-            },
-            weight()
+        // Suggestion chips
+
+        messages.addView(
+            textView(
+                "Try asking",
+                muted,
+                12f,
+                true
+            ),
+            margin(0, 10, 0, 5)
         )
 
-        row.addView(
-            iconButton("🎙") {
-                showVoice()
-            },
-            weight()
+        val suggestions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        suggestions.addView(
+            chip("Explain something") {
+                showChatWithPrompt("Explain something to me")
+            }
         )
 
-        row.addView(
-            iconButton("➤") {
-                toast("Message sent")
-            },
-            weight()
+        suggestions.addView(
+            chip("Search web") {
+                showChatWithPrompt("Search the web for")
+            }
         )
 
-        input.addView(row)
+        messages.addView(
+            suggestions,
+            margin(0, 0, 0, 10)
+        )
+
+        scroll.addView(messages)
 
         content.addView(
-            input,
-            marginParams(0, 12, 0, 0)
-        )
-
-        scroll.addView(content)
-
-        rootContainer.addView(
             scroll,
             LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
-        rootContainer.addView(
-            bottomNav("chat")
+        // Composer
+
+        val composer = panel().apply {
+            setPadding(12, 10, 12, 10)
+        }
+
+        val composerRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        val attach = iconCircle("＋") {
+            toast("File picker coming next")
+        }
+
+        composerRow.addView(attach)
+
+        val field = textView(
+            "Message AERON...",
+            muted,
+            15f,
+            false
+        ).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(12, 0, 8, 0)
+            setOnClickListener {
+                toast("Message input")
+            }
+        }
+
+        composerRow.addView(
+            field,
+            LinearLayout.LayoutParams(0, 52, 1f)
         )
+
+        composerRow.addView(
+            iconCircle("🎙") {
+                showVoice()
+            }
+        )
+
+        composerRow.addView(
+            iconCircle("↑") {
+                toast("Message sent")
+            }
+        )
+
+        composer.addView(composerRow)
+
+        content.addView(
+            composer,
+            margin(0, 8, 0, 4)
+        )
+
+        rootContainer.addView(content)
+
+        rootContainer.addView(bottomNav("chat"))
 
         setContentView(rootContainer)
     }
 
-    // =========================
+    // =========================================================
     // VOICE
-    // =========================
+    // =========================================================
 
     private fun showVoice() {
 
         rootContainer = baseScreen()
 
         rootContainer.addView(
-            topBar("Voice Assistant") {
+            premiumTopBar(
+                "AERON",
+                "VOICE",
+                "◉"
+            ) {
                 showHome()
             }
         )
 
+        val scroll = ScrollView(this)
+
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(22, 30, 22, 20)
-        }
-
-        val orb = TextView(this).apply {
-            text = "✦"
-            textSize = 90f
-            setTextColor(cyan)
-            gravity = Gravity.CENTER
-            background = rounded(card2, 180f)
+            setPadding(20, 15, 20, 30)
         }
 
         content.addView(
-            orb,
-            LinearLayout.LayoutParams(210, 210)
+            textView(
+                "VOICE CONTROL",
+                cyan,
+                11f,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+            }
         )
 
         content.addView(
-            label(
-                "Hey AERON",
+            textView(
+                "Talk to AERON",
                 white,
-                true,
-                28f
-            )
+                29f,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+            }
         )
 
         content.addView(
-            label(
-                "Wake word detection is active.",
+            textView(
+                "Say “Hey AERON” to wake your assistant.",
                 muted,
-                false,
-                15f
-            )
+                14f,
+                false
+            ).apply {
+                gravity = Gravity.CENTER
+            }
         )
 
-        val state = cardView()
+        // Large orb
+
+        val orb = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                280,
+                280
+            ).apply {
+                topMargin = 25
+                bottomMargin = 25
+            }
+        }
+
+        val glow = TextView(this).apply {
+            text = ""
+            background = orbBackground(280)
+            alpha = 0.28f
+        }
+
+        orb.addView(
+            glow,
+            FrameLayout.LayoutParams(280, 280)
+        )
+
+        val core = TextView(this).apply {
+            text = "✦"
+            textSize = 92f
+            gravity = Gravity.CENTER
+            setTextColor(cyan)
+            background = orbBackground(210)
+            elevation = 15f
+        }
+
+        orb.addView(
+            core,
+            FrameLayout.LayoutParams(210, 210).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        orb.addView(
+            textView(
+                "AERON",
+                white,
+                12f,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+                letterSpacing = 0.4f
+            },
+            FrameLayout.LayoutParams(-1, -2).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        content.addView(orb)
+
+        val state = panel()
 
         state.addView(
-            label(
-                "WAKE WORD",
+            textView(
+                "WAKE WORD STATUS",
                 cyan,
+                11f,
+                true
+            )
+        )
+
+        val statusRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        statusRow.addView(
+            textView(
+                "●",
+                green,
+                20f,
+                true
+            )
+        )
+
+        statusRow.addView(
+            textView(
+                "Hey AERON",
+                white,
+                18f,
+                true
+            ),
+            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                leftMargin = 10
+            }
+        )
+
+        statusRow.addView(
+            textView(
+                "85%",
+                cyan,
+                13f,
                 true
             )
         )
 
         state.addView(
-            label(
-                "Hey AERON",
-                white,
-                true,
-                20f
-            )
+            statusRow,
+            margin(0, 10, 0, 0)
         )
 
         state.addView(
-            label(
-                "Sensitivity: 85%",
+            textView(
+                "ONNX neural wake-word detection is active.",
                 muted,
-                false,
-                14f
-            )
+                12f,
+                false
+            ),
+            margin(0, 5, 0, 0)
         )
 
         content.addView(
             state,
-            marginParams(0, 30, 0, 12)
+            margin(0, 0, 0, 12)
         )
 
-        content.addView(
-            actionCard(
-                "🎙",
-                "Test microphone"
-            ) {
-                toast(
-                    if (isListening)
-                        "Microphone is listening"
-                    else
-                        "Microphone is starting"
-                )
-            },
-            LinearLayout.LayoutParams(-1, -2)
-        )
+        val test = bigButton(
+            "🎙   Test microphone"
+        ) {
+            toast(
+                if (isListening)
+                    "Microphone is listening"
+                else
+                    "Microphone is starting"
+            )
+        }
+
+        content.addView(test)
+
+        scroll.addView(content)
 
         rootContainer.addView(
-            content,
+            scroll,
             LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
-        rootContainer.addView(
-            bottomNav("voice")
-        )
+        rootContainer.addView(bottomNav("voice"))
 
         setContentView(rootContainer)
     }
 
-    // =========================
+    // =========================================================
     // MEMORY
-    // =========================
+    // =========================================================
 
     private fun showMemory() {
 
         rootContainer = baseScreen()
 
         rootContainer.addView(
-            topBar("Memory Vault") {
+            premiumTopBar(
+                "AERON",
+                "MEMORY VAULT",
+                "◈"
+            ) {
                 showHome()
             }
         )
@@ -575,56 +804,150 @@ class MainActivity : AppCompatActivity() {
 
         val list = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(18, 10, 18, 25)
+            setPadding(18, 10, 18, 28)
         }
 
-        list.addView(
-            infoCard(
-                "🧠",
-                "Long-term Memory",
-                "AERON can remember useful preferences with your control."
+        val hero = panel()
+
+        hero.addView(
+            textView(
+                "MEMORY VAULT",
+                cyan,
+                11f,
+                true
             )
         )
 
-        list.addView(
-            infoCard(
-                "🔐",
-                "Privacy Protected",
-                "Sensitive information should never be saved automatically."
-            )
-        )
-
-        list.addView(
-            infoCard(
-                "🗑",
-                "Memory Controls",
-                "View, delete individual memories, or clear everything."
-            )
-        )
-
-        val empty = cardView()
-
-        empty.addView(
-            label(
-                "No memories shown yet",
+        hero.addView(
+            textView(
+                "AERON remembers what matters.",
                 white,
-                true,
-                17f
+                23f,
+                true
             )
         )
 
-        empty.addView(
-            label(
-                "Your Memory Vault will appear here.",
+        hero.addView(
+            textView(
+                "Your memories stay under your control.",
                 muted,
-                false,
-                13f
+                13f,
+                false
             )
+        )
+
+        val memoryState = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        memoryState.addView(
+            textView(
+                "●",
+                green,
+                17f,
+                true
+            )
+        )
+
+        memoryState.addView(
+            textView(
+                "Memory protection active",
+                text,
+                13f,
+                true
+            ),
+            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                leftMargin = 8
+            }
+        )
+
+        memoryState.addView(
+            textView(
+                "ON",
+                green,
+                10f,
+                true
+            ).apply {
+                background = pill(green, 0.12f)
+                setPadding(10, 6, 10, 6)
+            }
+        )
+
+        hero.addView(
+            memoryState,
+            margin(0, 18, 0, 0)
+        )
+
+        list.addView(
+            hero,
+            margin(0, 5, 0, 18)
+        )
+
+        list.addView(
+            memoryFeature(
+                "🧠",
+                "Long-term memory",
+                "Save useful preferences and information."
+            )
+        )
+
+        list.addView(
+            memoryFeature(
+                "🔐",
+                "Privacy protection",
+                "Sensitive information is protected."
+            )
+        )
+
+        list.addView(
+            memoryFeature(
+                "🗑",
+                "Memory controls",
+                "Review and delete memories whenever you want."
+            )
+        )
+
+        val empty = panel()
+
+        empty.gravity = Gravity.CENTER
+
+        empty.addView(
+            textView(
+                "◈",
+                muted,
+                35f,
+                false
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        empty.addView(
+            textView(
+                "No memories yet",
+                white,
+                17f,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        empty.addView(
+            textView(
+                "Your saved memories will appear here.",
+                muted,
+                12f,
+                false
+            ).apply {
+                gravity = Gravity.CENTER
+            }
         )
 
         list.addView(
             empty,
-            marginParams(0, 8, 0, 0)
+            margin(0, 15, 0, 0)
         )
 
         scroll.addView(list)
@@ -634,23 +957,25 @@ class MainActivity : AppCompatActivity() {
             LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
-        rootContainer.addView(
-            bottomNav("memory")
-        )
+        rootContainer.addView(bottomNav("memory"))
 
         setContentView(rootContainer)
     }
 
-    // =========================
+    // =========================================================
     // SETTINGS
-    // =========================
+    // =========================================================
 
     private fun showSettings() {
 
         rootContainer = baseScreen()
 
         rootContainer.addView(
-            topBar("Settings") {
+            premiumTopBar(
+                "AERON",
+                "SETTINGS",
+                "⚙"
+            ) {
                 showHome()
             }
         )
@@ -659,11 +984,18 @@ class MainActivity : AppCompatActivity() {
 
         val list = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(18, 5, 18, 28)
+            setPadding(18, 6, 18, 28)
         }
 
         list.addView(
-            infoCard(
+            settingsHeader(
+                "Account",
+                "Manage your AERON identity"
+            )
+        )
+
+        list.addView(
+            settingsItem(
                 "👤",
                 "Account",
                 "Phone • Google • Facebook • Profile"
@@ -673,15 +1005,24 @@ class MainActivity : AppCompatActivity() {
         )
 
         list.addView(
-            infoCard(
-                "✦",
-                "AERON CORE",
-                "Personality • Intelligence • Response style"
+            settingsHeader(
+                "AERON",
+                "Customize how your assistant behaves"
             )
         )
 
         list.addView(
-            infoCard(
+            settingsItem(
+                "✦",
+                "AERON CORE",
+                "Personality • Intelligence • Response style"
+            ) {
+                toast("AERON CORE customization")
+            }
+        )
+
+        list.addView(
+            settingsItem(
                 "🎙",
                 "Voice & Wake Word",
                 "Hey AERON • Voice • Sensitivity"
@@ -691,7 +1032,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         list.addView(
-            infoCard(
+            settingsItem(
                 "🧠",
                 "Memory",
                 "Memory Vault • Saved information"
@@ -701,8 +1042,8 @@ class MainActivity : AppCompatActivity() {
         )
 
         list.addView(
-            infoCard(
-                "◈",
+            settingsItem(
+                "◉",
                 "Chat History",
                 "Search • Rename • Delete • Restore"
             ) {
@@ -711,8 +1052,15 @@ class MainActivity : AppCompatActivity() {
         )
 
         list.addView(
-            infoCard(
-                "🎨",
+            settingsHeader(
+                "Personalization",
+                "Make AERON feel like yours"
+            )
+        )
+
+        list.addView(
+            settingsItem(
+                "◈",
                 "Appearance",
                 "Theme • Animations • Orb style"
             ) {
@@ -721,17 +1069,24 @@ class MainActivity : AppCompatActivity() {
         )
 
         list.addView(
-            infoCard(
+            settingsItem(
                 "🌐",
                 "Language & Region",
-                "Automatic language detection • All languages"
+                "Automatic language • All languages"
             ) {
                 toast("Language settings")
             }
         )
 
         list.addView(
-            infoCard(
+            settingsHeader(
+                "Security",
+                "Control your privacy"
+            )
+        )
+
+        list.addView(
+            settingsItem(
                 "🔒",
                 "Privacy & Security",
                 "Permissions • Data controls • Privacy"
@@ -741,10 +1096,17 @@ class MainActivity : AppCompatActivity() {
         )
 
         list.addView(
-            infoCard(
+            settingsHeader(
+                "More",
+                "Information and support"
+            )
+        )
+
+        list.addView(
+            settingsItem(
                 "ⓘ",
                 "About AERON",
-                "Version • Help • Support"
+                "Version 1.0 • Help • Support"
             ) {
                 toast("AERON v1.0")
             }
@@ -757,63 +1119,72 @@ class MainActivity : AppCompatActivity() {
             LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
-        rootContainer.addView(
-            bottomNav("settings")
-        )
+        rootContainer.addView(bottomNav("settings"))
 
         setContentView(rootContainer)
     }
 
-    // =========================
-    // ACCOUNT
-    // =========================
+    // =========================================================
+    // ACCOUNT / LOGIN
+    // =========================================================
 
     private fun showAccount() {
 
         rootContainer = baseScreen()
 
         rootContainer.addView(
-            topBar("Account") {
+            premiumTopBar(
+                "AERON",
+                "ACCOUNT",
+                "👤"
+            ) {
                 showSettings()
             }
         )
 
+        val scroll = ScrollView(this)
+
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(18, 12, 18, 20)
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(20, 15, 20, 30)
         }
 
-        val profile = cardView()
+        val logo = TextView(this).apply {
+            text = "✦"
+            textSize = 58f
+            gravity = Gravity.CENTER
+            setTextColor(cyan)
+            background = orbBackground(150)
+        }
 
-        profile.addView(
-            label(
-                "AERON ACCOUNT",
-                cyan,
-                true
-            )
-        )
-
-        profile.addView(
-            label(
-                "Welcome to AERON",
-                white,
-                true,
-                24f
-            )
-        )
-
-        profile.addView(
-            label(
-                "Sign in to sync your account and preferences.",
-                muted,
-                false,
-                14f
-            )
+        content.addView(
+            logo,
+            LinearLayout.LayoutParams(150, 150).apply {
+                bottomMargin = 20
+            }
         )
 
         content.addView(
-            profile,
-            marginParams(0, 5, 0, 12)
+            textView(
+                "Welcome to AERON",
+                white,
+                27f,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        content.addView(
+            textView(
+                "Sign in to sync your AERON experience.",
+                muted,
+                14f,
+                false
+            ).apply {
+                gravity = Gravity.CENTER
+            }
         )
 
         content.addView(
@@ -821,163 +1192,257 @@ class MainActivity : AppCompatActivity() {
                 "📱",
                 "Continue with Phone"
             ) {
-                toast("Phone login setup next")
-            }
+                toast("Phone OTP setup comes next")
+            },
+            margin(0, 28, 0, 0)
         )
 
         content.addView(
             loginButton(
                 "G",
                 "Continue with Google"
-            ) {
-                toast("Google login setup next")
-            }
+            )
         )
 
         content.addView(
             loginButton(
                 "f",
                 "Continue with Facebook"
-            ) {
-                toast("Facebook login setup next")
-            }
-        )
-
-        val guest = cardView()
-
-        guest.addView(
-            label(
-                "Continue as Guest",
-                white,
-                true,
-                16f
             )
         )
 
-        guest.addView(
-            label(
-                "Use AERON locally without signing in.",
+        val divider = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        divider.addView(
+            line(),
+            LinearLayout.LayoutParams(0, 1, 1f)
+        )
+
+        divider.addView(
+            textView(
+                "  OR  ",
                 muted,
-                false,
-                13f
+                11f,
+                false
             )
         )
 
-        guest.setOnClickListener {
+        divider.addView(
+            line(),
+            LinearLayout.LayoutParams(0, 1, 1f)
+        )
+
+        content.addView(
+            divider,
+            margin(0, 12, 0, 12)
+        )
+
+        val guest = bigButton(
+            "Continue as Guest"
+        ) {
             showHome()
         }
 
+        content.addView(guest)
+
         content.addView(
-            guest,
-            marginParams(0, 10, 0, 0)
+            textView(
+                "Guest mode keeps your assistant local on this device.",
+                muted,
+                11f,
+                false
+            ).apply {
+                gravity = Gravity.CENTER
+            },
+            margin(0, 10, 0, 0)
         )
 
+        scroll.addView(content)
+
         rootContainer.addView(
-            content,
+            scroll,
             LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
-        rootContainer.addView(
-            bottomNav("settings")
-        )
+        rootContainer.addView(bottomNav("settings"))
 
         setContentView(rootContainer)
     }
 
-    // =========================
-    // UI HELPERS
-    // =========================
+    // =========================================================
+    // TOP BAR
+    // =========================================================
 
-    private fun topBar(
+    private fun homeTopBar(): View {
+
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(20, 17, 18, 10)
+        }
+
+        val brand = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        val mark = TextView(this).apply {
+            text = "✦"
+            textSize = 23f
+            setTextColor(cyan)
+            gravity = Gravity.CENTER
+        }
+
+        brand.addView(
+            mark,
+            LinearLayout.LayoutParams(36, 42)
+        )
+
+        brand.addView(
+            brandText(
+                "AERON",
+                "INTELLIGENCE, EVOLVED"
+            ),
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+
+        bar.addView(
+            brand,
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+
+        bar.addView(
+            smallIcon("⌕") {
+                showChatWithPrompt("Search the web")
+            }
+        )
+
+        bar.addView(
+            smallIcon("⚙") {
+                showSettings()
+            }
+        )
+
+        return bar
+    }
+
+    private fun premiumTopBar(
         title: String,
+        subtitle: String,
+        icon: String,
         back: () -> Unit
     ): View {
 
         val bar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(18, 18, 18, 12)
+            setPadding(18, 15, 18, 10)
         }
 
+        val backButton = smallIcon("‹", back)
+
+        bar.addView(backButton)
+
         bar.addView(
-            iconButton("‹", back)
+            brandText(title, subtitle),
+            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                leftMargin = 10
+            }
         )
 
         bar.addView(
-            label(
-                title,
-                white,
-                true,
-                23f
-            ),
-            LinearLayout.LayoutParams(0, -2, 1f)
+            TextView(this).apply {
+                text = icon
+                textSize = 18f
+                gravity = Gravity.CENTER
+                setTextColor(cyan)
+                background = pill(cyan, 0.08f)
+                setPadding(10, 8, 10, 8)
+            }
         )
 
         return bar
     }
+
+    private fun brandText(
+        title: String,
+        subtitle: String
+    ): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        box.addView(
+            textView(
+                title,
+                white,
+                19f,
+                true
+            )
+        )
+
+        box.addView(
+            textView(
+                subtitle,
+                muted,
+                9f,
+                true
+            )
+        )
+
+        return box
+    }
+
+    // =========================================================
+    // BOTTOM NAV
+    // =========================================================
 
     private fun bottomNav(active: String): View {
 
         val nav = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(6, 8, 6, 10)
-            setBackgroundColor(Color.rgb(7, 14, 29))
+            setPadding(8, 8, 8, 10)
+            background = topBorder()
         }
 
         nav.addView(
-            navItem(
-                "⌂",
-                "Home",
-                active == "home"
-            ) {
+            navItem("⌂", "Home", active == "home") {
                 showHome()
             },
-            weight()
+            navWeight()
         )
 
         nav.addView(
-            navItem(
-                "◉",
-                "Chat",
-                active == "chat"
-            ) {
+            navItem("◉", "Chat", active == "chat") {
                 showChat()
             },
-            weight()
+            navWeight()
         )
 
         nav.addView(
-            navItem(
-                "🎙",
-                "Voice",
-                active == "voice"
-            ) {
+            navItem("✦", "Voice", active == "voice") {
                 showVoice()
             },
-            weight()
+            navWeight()
         )
 
         nav.addView(
-            navItem(
-                "◈",
-                "Memory",
-                active == "memory"
-            ) {
+            navItem("◈", "Memory", active == "memory") {
                 showMemory()
             },
-            weight()
+            navWeight()
         )
 
         nav.addView(
-            navItem(
-                "⚙",
-                "Settings",
-                active == "settings"
-            ) {
+            navItem("⚙", "Settings", active == "settings") {
                 showSettings()
             },
-            weight()
+            navWeight()
         )
 
         return nav
@@ -985,7 +1450,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun navItem(
         icon: String,
-        name: String,
+        title: String,
         active: Boolean,
         click: () -> Unit
     ): View {
@@ -993,282 +1458,70 @@ class MainActivity : AppCompatActivity() {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(2, 3, 2, 3)
-
+            setPadding(4, 4, 4, 3)
             setOnClickListener {
                 click()
             }
         }
 
-        box.addView(
-            label(
-                icon,
-                if (active) cyan else muted,
-                true,
-                20f
-            )
-        )
+        val iconView = textView(
+            icon,
+            if (active) cyan else muted,
+            19f,
+            true
+        ).apply {
+            gravity = Gravity.CENTER
+        }
+
+        if (active) {
+            iconView.background = pill(cyan, 0.10f)
+            iconView.setPadding(12, 5, 12, 5)
+        }
+
+        box.addView(iconView)
 
         box.addView(
-            label(
-                name,
+            textView(
+                title,
                 if (active) white else muted,
-                false,
-                10f
-            )
+                9f,
+                active
+            ).apply {
+                gravity = Gravity.CENTER
+            }
         )
 
         return box
     }
 
-    private fun baseScreen(): LinearLayout {
+    // =========================================================
+    // UI COMPONENTS
+    // =========================================================
 
+    private fun baseScreen(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
         }
     }
 
-    private fun cardView(): LinearLayout {
+    private fun panel(): LinearLayout {
 
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 18, 18, 18)
-            background = rounded(card, 22f)
+            background = rounded(
+                surface,
+                24f,
+                border
+            )
+            elevation = 2f
         }
     }
 
-    private fun simpleCard(
+    private fun sectionTitle(
         title: String,
-        subtitle: String,
-        click: () -> Unit
-    ): View {
-
-        val box = cardView()
-
-        box.addView(
-            label(
-                title,
-                white,
-                true,
-                16f
-            )
-        )
-
-        box.addView(
-            label(
-                subtitle,
-                muted,
-                false,
-                12f
-            )
-        )
-
-        box.setOnClickListener {
-            click()
-        }
-
-        box.layoutParams =
-            marginParams(0, 7, 0, 0)
-
-        return box
-    }
-
-    private fun messageCard(
-        title: String,
-        message: String,
-        ai: Boolean
-    ): View {
-
-        val box = cardView()
-
-        box.addView(
-            label(
-                title,
-                if (ai) cyan else white,
-                true,
-                13f
-            )
-        )
-
-        box.addView(
-            label(
-                message,
-                white,
-                false,
-                15f
-            )
-        )
-
-        box.layoutParams =
-            marginParams(0, 7, 0, 0)
-
-        return box
-    }
-
-    private fun infoCard(
-        icon: String,
-        title: String,
-        subtitle: String,
-        click: (() -> Unit)? = null
-    ): View {
-
-        val box = cardView()
-
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        row.addView(
-            label(
-                icon,
-                cyan,
-                true,
-                24f
-            ),
-            LinearLayout.LayoutParams(48, 58)
-        )
-
-        val texts = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        texts.addView(
-            label(
-                title,
-                white,
-                true,
-                16f
-            )
-        )
-
-        texts.addView(
-            label(
-                subtitle,
-                muted,
-                false,
-                12f
-            )
-        )
-
-        row.addView(
-            texts,
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        row.addView(
-            label(
-                "›",
-                muted,
-                false,
-                27f
-            )
-        )
-
-        box.addView(row)
-
-        if (click != null) {
-            box.setOnClickListener {
-                click()
-            }
-        }
-
-        box.layoutParams =
-            marginParams(0, 7, 0, 0)
-
-        return box
-    }
-
-    private fun actionCard(
-        icon: String,
-        title: String,
-        click: () -> Unit
-    ): View {
-
-        val box = cardView()
-
-        box.gravity = Gravity.CENTER
-
-        box.addView(
-            label(
-                icon,
-                cyan,
-                true,
-                24f
-            )
-        )
-
-        box.addView(
-            label(
-                title,
-                white,
-                true,
-                11f
-            )
-        )
-
-        box.setOnClickListener {
-            click()
-        }
-
-        return box
-    }
-
-    private fun loginButton(
-        icon: String,
-        title: String,
-        click: () -> Unit
-    ): View {
-
-        val box = cardView()
-
-        box.orientation = LinearLayout.HORIZONTAL
-        box.gravity = Gravity.CENTER_VERTICAL
-
-        box.addView(
-            label(
-                icon,
-                cyan,
-                true,
-                20f
-            ),
-            LinearLayout.LayoutParams(45, 55)
-        )
-
-        box.addView(
-            label(
-                title,
-                white,
-                true,
-                15f
-            ),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        box.addView(
-            label(
-                "›",
-                muted,
-                false,
-                25f
-            )
-        )
-
-        box.setOnClickListener {
-            click()
-        }
-
-        box.layoutParams =
-            marginParams(0, 7, 0, 0)
-
-        return box
-    }
-
-    private fun verticalText(
-        title: String,
-        subtitle: String,
-        size: Float
+        subtitle: String
     ): View {
 
         val box = LinearLayout(this).apply {
@@ -1276,57 +1529,627 @@ class MainActivity : AppCompatActivity() {
         }
 
         box.addView(
-            label(
+            textView(
                 title,
                 white,
-                true,
-                size
+                19f,
+                true
             )
         )
 
         box.addView(
-            label(
+            textView(
                 subtitle,
                 muted,
-                false,
-                11f
+                11f,
+                false
             )
         )
 
         return box
     }
 
-    private fun iconButton(
-        symbol: String,
+    private fun quickAction(
+        icon: String,
+        title: String,
         click: () -> Unit
-    ): TextView {
+    ): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(6, 13, 6, 13)
+            background = rounded(
+                surface2,
+                19f,
+                border
+            )
+            setOnClickListener {
+                click()
+            }
+        }
+
+        box.addView(
+            textView(
+                icon,
+                cyan,
+                22f,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        box.addView(
+            textView(
+                title,
+                text,
+                10f,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        return box
+    }
+
+    private fun fakeInput(
+        hint: String,
+        click: () -> Unit
+    ): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(13, 7, 7, 7)
+            background = rounded(
+                surface3,
+                17f,
+                border
+            )
+            setOnClickListener {
+                click()
+            }
+        }
+
+        box.addView(
+            textView(
+                hint,
+                muted,
+                14f,
+                false
+            ),
+            LinearLayout.LayoutParams(0, 50, 1f)
+        )
+
+        box.addView(
+            iconCircle("↑") {
+                click()
+            }
+        )
+
+        return box
+    }
+
+    private fun recentItem(
+        title: String,
+        subtitle: String,
+        icon: String,
+        click: () -> Unit
+    ): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(14, 13, 12, 13)
+            background = rounded(
+                surface,
+                18f,
+                border
+            )
+            setOnClickListener {
+                click()
+            }
+        }
+
+        box.addView(
+            TextView(this).apply {
+                text = icon
+                textSize = 19f
+                gravity = Gravity.CENTER
+                setTextColor(cyan)
+                background = pill(cyan, 0.08f)
+                setPadding(10, 8, 10, 8)
+            }
+        )
+
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        texts.addView(
+            textView(
+                title,
+                text,
+                14f,
+                true
+            )
+        )
+
+        texts.addView(
+            textView(
+                subtitle,
+                muted,
+                11f,
+                false
+            )
+        )
+
+        box.addView(
+            texts,
+            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                leftMargin = 12
+            }
+        )
+
+        box.addView(
+            textView(
+                "›",
+                muted,
+                24f,
+                false
+            )
+        )
+
+        box.layoutParams = margin(0, 7, 0, 0)
+
+        return box
+    }
+
+    private fun userMessage(message: String): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.END
+        }
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(15, 12, 15, 12)
+            background = rounded(
+                Color.rgb(18, 38, 68),
+                20f,
+                Color.rgb(37, 75, 125)
+            )
+        }
+
+        card.addView(
+            textView(
+                "YOU",
+                cyan,
+                10f,
+                true
+            )
+        )
+
+        card.addView(
+            textView(
+                message,
+                text,
+                14f,
+                false
+            )
+        )
+
+        box.addView(card)
+
+        box.layoutParams = margin(35, 5, 0, 5)
+
+        return box
+    }
+
+    private fun aiMessage(
+        title: String,
+        message: String
+    ): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
+        }
+
+        val mark = TextView(this).apply {
+            text = "✦"
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setTextColor(cyan)
+            background = pill(cyan, 0.08f)
+            setPadding(10, 7, 10, 7)
+        }
+
+        box.addView(mark)
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(15, 12, 15, 12)
+            background = rounded(
+                surface,
+                20f,
+                border
+            )
+        }
+
+        card.addView(
+            textView(
+                title,
+                cyan,
+                11f,
+                true
+            )
+        )
+
+        card.addView(
+            textView(
+                message,
+                text,
+                14f,
+                false
+            )
+        )
+
+        box.addView(
+            card,
+            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                leftMargin = 9
+            }
+        )
+
+        box.layoutParams = margin(0, 5, 35, 5)
+
+        return box
+    }
+
+    private fun chip(
+        title: String,
+        click: () -> Unit
+    ): View {
 
         return TextView(this).apply {
-            text = symbol
-            textSize = 20f
+            text = title
+            textSize = 10f
+            setTextColor(text)
             gravity = Gravity.CENTER
-            setTextColor(white)
-            setPadding(12, 8, 12, 8)
-            background = rounded(card2, 18f)
+            setPadding(13, 9, 13, 9)
+            background = rounded(
+                surface2,
+                15f,
+                border
+            )
+            setOnClickListener {
+                click()
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                -2,
+                -2
+            ).apply {
+                rightMargin = 7
+            }
+        }
+    }
 
+    private fun memoryFeature(
+        icon: String,
+        title: String,
+        subtitle: String
+    ): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(15, 13, 15, 13)
+            background = rounded(
+                surface,
+                18f,
+                border
+            )
+        }
+
+        box.addView(
+            textView(
+                icon,
+                cyan,
+                22f,
+                false
+            ).apply {
+                gravity = Gravity.CENTER
+            },
+            LinearLayout.LayoutParams(45, 45)
+        )
+
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        texts.addView(
+            textView(
+                title,
+                white,
+                14f,
+                true
+            )
+        )
+
+        texts.addView(
+            textView(
+                subtitle,
+                muted,
+                11f,
+                false
+            )
+        )
+
+        box.addView(
+            texts,
+            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                leftMargin = 10
+            }
+        )
+
+        box.layoutParams = margin(0, 6, 0, 0)
+
+        return box
+    }
+
+    private fun settingsHeader(
+        title: String,
+        subtitle: String
+    ): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(3, 15, 3, 4)
+        }
+
+        box.addView(
+            textView(
+                title.uppercase(),
+                cyan,
+                10f,
+                true
+            )
+        )
+
+        box.addView(
+            textView(
+                subtitle,
+                muted,
+                10f,
+                false
+            )
+        )
+
+        return box
+    }
+
+    private fun settingsItem(
+        icon: String,
+        title: String,
+        subtitle: String,
+        click: () -> Unit
+    ): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(14, 13, 12, 13)
+            background = rounded(
+                surface,
+                19f,
+                border
+            )
+            setOnClickListener {
+                click()
+            }
+        }
+
+        box.addView(
+            TextView(this).apply {
+                text = icon
+                textSize = 19f
+                gravity = Gravity.CENTER
+                setTextColor(cyan)
+                background = pill(cyan, 0.08f)
+                setPadding(9, 8, 9, 8)
+            }
+        )
+
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        texts.addView(
+            textView(
+                title,
+                white,
+                14f,
+                true
+            )
+        )
+
+        texts.addView(
+            textView(
+                subtitle,
+                muted,
+                10f,
+                false
+            )
+        )
+
+        box.addView(
+            texts,
+            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                leftMargin = 11
+            }
+        )
+
+        box.addView(
+            textView(
+                "›",
+                muted,
+                25f,
+                false
+            )
+        )
+
+        box.layoutParams = margin(0, 5, 0, 0)
+
+        return box
+    }
+
+    private fun loginButton(
+        icon: String,
+        title: String,
+        click: (() -> Unit)? = null
+    ): View {
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(15, 12, 13, 12)
+            background = rounded(
+                surface,
+                19f,
+                border
+            )
+            setOnClickListener {
+                click?.invoke()
+            }
+        }
+
+        box.addView(
+            textView(
+                icon,
+                cyan,
+                19f,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+            },
+            LinearLayout.LayoutParams(45, 45)
+        )
+
+        box.addView(
+            textView(
+                title,
+                white,
+                14f,
+                true
+            ),
+            LinearLayout.LayoutParams(0, -2, 1f).apply {
+                leftMargin = 10
+            }
+        )
+
+        box.addView(
+            textView(
+                "›",
+                muted,
+                24f,
+                false
+            )
+        )
+
+        box.layoutParams = margin(0, 6, 0, 0)
+
+        return box
+    }
+
+    private fun bigButton(
+        title: String,
+        click: () -> Unit
+    ): View {
+
+        return TextView(this).apply {
+            text = title
+            textSize = 14f
+            setTextColor(white)
+            gravity = Gravity.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(15, 15, 15, 15)
+            background = rounded(
+                surface2,
+                18f,
+                border
+            )
             setOnClickListener {
                 click()
             }
         }
     }
 
-    private fun label(
+    private fun iconCircle(
+        symbol: String,
+        click: () -> Unit
+    ): View {
+
+        return TextView(this).apply {
+            text = symbol
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setTextColor(white)
+            background = rounded(
+                surface3,
+                17f,
+                border
+            )
+            setPadding(9, 5, 9, 5)
+            setOnClickListener {
+                click()
+            }
+        }
+    }
+
+    private fun smallIcon(
+        symbol: String,
+        click: () -> Unit
+    ): View {
+
+        return TextView(this).apply {
+            text = symbol
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setTextColor(text)
+            background = rounded(
+                surface2,
+                15f,
+                border
+            )
+            setPadding(9, 7, 9, 7)
+            setOnClickListener {
+                click()
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                42,
+                42
+            ).apply {
+                leftMargin = 5
+            }
+        }
+    }
+
+    private fun textView(
         value: String,
         color: Int,
-        bold: Boolean,
-        size: Float = 15f
+        size: Float,
+        bold: Boolean
     ): TextView {
 
         return TextView(this).apply {
             text = value
             textSize = size
             setTextColor(color)
-            setPadding(0, 3, 0, 3)
+            setPadding(0, 2, 0, 2)
 
             if (bold) {
                 typeface = Typeface.DEFAULT_BOLD
@@ -1334,46 +2157,128 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // =========================================================
+    // DRAWABLES
+    // =========================================================
+
     private fun rounded(
         color: Int,
-        radius: Float
-    ): android.graphics.drawable.GradientDrawable {
+        radius: Float,
+        strokeColor: Int
+    ): GradientDrawable {
 
-        return android.graphics.drawable.GradientDrawable().apply {
+        return GradientDrawable().apply {
             setColor(color)
             cornerRadius = radius
+            setStroke(1, strokeColor)
+        }
+    }
+
+    private fun pill(
+        color: Int,
+        alpha: Float
+    ): GradientDrawable {
+
+        val a = (alpha * 255).toInt().coerceIn(0, 255)
+
+        return GradientDrawable().apply {
+            setColor(
+                Color.argb(
+                    a,
+                    Color.red(color),
+                    Color.green(color),
+                    Color.blue(color)
+                )
+            )
+            cornerRadius = 100f
+        }
+    }
+
+    private fun orbBackground(
+        size: Int
+    ): GradientDrawable {
+
+        return GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(
+                Color.rgb(8, 45, 65),
+                Color.rgb(21, 27, 68),
+                Color.rgb(36, 17, 70)
+            )
+        ).apply {
+            shape = GradientDrawable.OVAL
             setStroke(
-                1,
-                Color.rgb(25, 65, 110)
+                2,
+                Color.rgb(0, 170, 220)
             )
         }
     }
 
-    private fun weight(): LinearLayout.LayoutParams {
+    private fun topBorder(): GradientDrawable {
 
-        return LinearLayout.LayoutParams(
-            0,
-            -2,
-            1f
-        ).apply {
-            setMargins(4, 0, 4, 0)
+        return GradientDrawable().apply {
+            setColor(Color.rgb(5, 10, 22))
+            setStroke(
+                1,
+                Color.rgb(23, 39, 67)
+            )
         }
     }
 
-    private fun marginParams(
-        l: Int,
-        t: Int,
-        r: Int,
-        b: Int
+    private fun line(): View {
+
+        return View(this).apply {
+            setBackgroundColor(border)
+        }
+    }
+
+    // =========================================================
+    // LAYOUT
+    // =========================================================
+
+    private fun margin(
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int
     ): LinearLayout.LayoutParams {
 
         return LinearLayout.LayoutParams(
             -1,
             -2
         ).apply {
-            setMargins(l, t, r, b)
+            setMargins(
+                left,
+                top,
+                right,
+                bottom
+            )
         }
     }
+
+    private fun actionWeight(): LinearLayout.LayoutParams {
+
+        return LinearLayout.LayoutParams(
+            0,
+            -2,
+            1f
+        ).apply {
+            setMargins(3, 0, 3, 0)
+        }
+    }
+
+    private fun navWeight(): LinearLayout.LayoutParams {
+
+        return LinearLayout.LayoutParams(
+            0,
+            -2,
+            1f
+        )
+    }
+
+    // =========================================================
+    // TOAST
+    // =========================================================
 
     private fun toast(message: String) {
         Toast.makeText(
@@ -1383,9 +2288,9 @@ class MainActivity : AppCompatActivity() {
         ).show()
     }
 
-    // =========================
+    // =========================================================
     // ONNX / WAKE WORD
-    // =========================
+    // =========================================================
 
     private fun copyAssetsIfNeeded() {
 
@@ -1538,9 +2443,7 @@ class MainActivity : AppCompatActivity() {
                     if (filled >= WINDOW_SAMPLES) {
 
                         val audio =
-                            ShortArray(
-                                WINDOW_SAMPLES
-                            )
+                            ShortArray(WINDOW_SAMPLES)
 
                         var index = position
 
@@ -1565,12 +2468,15 @@ class MainActivity : AppCompatActivity() {
 
                             runOnUiThread {
 
-                                statusText.text =
-                                    "✦  AERON detected!\n\nHey AERON 👋"
+                                if (::statusText.isInitialized) {
 
-                                statusText.setTextColor(
-                                    cyan
-                                )
+                                    statusText.text =
+                                        "✦  AERON detected!\n\nHey AERON 👋"
+
+                                    statusText.setTextColor(
+                                        cyan
+                                    )
+                                }
                             }
 
                             Thread.sleep(1500)
@@ -1953,12 +2859,10 @@ class MainActivity : AppCompatActivity() {
             val z =
                 exp(-x)
 
-            (
-                    1f /
-                            (
-                                    1f + z
-                                    )
-                    )
+            1f /
+                    (
+                            1f + z
+                            )
 
         } else {
 
