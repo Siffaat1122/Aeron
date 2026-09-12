@@ -1,4 +1,4 @@
-    package com.example.aeron
+package com.example.aeron
 
 import android.animation.ValueAnimator
 import android.content.Context
