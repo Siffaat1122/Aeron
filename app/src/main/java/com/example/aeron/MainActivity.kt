@@ -145,232 +145,275 @@ private fun buildShell() {
 
     private fun showHome() {
 
-        clear()
+    clear()
 
-        content.addView(
-            tv(
-                "Good day.",
-                14f,
-                muted,
-                Typeface.NORMAL
-            )
-        )
-
-        content.addView(
-            tv(
-                "How can AERON help?",
-                29f,
-                white,
-                Typeface.BOLD
-            )
-        )
-
-        content.addView(space(18))
-
-        // ORB
-        val orbContainer = FrameLayout(this)
-        orbContainer.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            dp(300)
-        )
-
-        val glow = GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
-            intArrayOf(
-                Color.rgb(12, 48, 80),
-                Color.rgb(30, 17, 65),
-                Color.rgb(4, 10, 24)
-            )
-        )
-        glow.cornerRadius = dp(28).toFloat()
-        orbContainer.background = glow
-
-        val orb = TextView(this)
-        orb.text = "A"
-        orb.gravity = Gravity.CENTER
-        orb.textSize = 62f
-        orb.setTextColor(cyan)
-        orb.typeface = Typeface.create("sans-serif", Typeface.BOLD)
-
-        val orbBg = GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
-            intArrayOf(
-                Color.rgb(9, 45, 63),
-                Color.rgb(25, 19, 62)
-            )
-        )
-        orbBg.shape = GradientDrawable.OVAL
-        orbBg.setStroke(dp(2), cyan)
-        orb.background = orbBg
-        orb.elevation = dp(18).toFloat()
-
-        val orbSize = dp(150)
-
-        orbContainer.addView(
-            orb,
-            FrameLayout.LayoutParams(orbSize, orbSize).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        val coreLabel = tv(
-            "AERON CORE",
-            11f,
+    // Greeting
+    content.addView(
+        tv(
+            "Hey AERON",
+            14f,
             cyan,
             Typeface.BOLD
         )
-        coreLabel.gravity = Gravity.CENTER
-        coreLabel.letterSpacing = 0.22f
+    )
 
-        orbContainer.addView(
-            coreLabel,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.BOTTOM
-                bottomMargin = dp(28)
-            }
+    content.addView(space(5))
+
+    content.addView(
+        tv(
+            "How can I help you today?",
+            27f,
+            white,
+            Typeface.BOLD
         )
+    )
 
-        content.addView(orbContainer)
+    content.addView(space(20))
 
-        content.addView(space(18))
+    // AERON CORE ORB
+    val orbBox = FrameLayout(this)
 
-        // STATUS
-        val status = panel()
+    orbBox.layoutParams = LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.MATCH_PARENT,
+        dp(285)
+    )
 
-        val statusTop = LinearLayout(this)
-        statusTop.orientation = LinearLayout.HORIZONTAL
-        statusTop.gravity = Gravity.CENTER_VERTICAL
-
-        val dot = TextView(this)
-        dot.text = "●"
-        dot.textSize = 12f
-        dot.setTextColor(green)
-
-        statusTop.addView(dot)
-        statusTop.addView(space(8))
-        statusTop.addView(
-            tv(
-                "AERON is ready",
-                14f,
-                text,
-                Typeface.BOLD
-            )
+    orbBox.background = GradientDrawable(
+        GradientDrawable.Orientation.TL_BR,
+        intArrayOf(
+            Color.rgb(8, 30, 58),
+            Color.rgb(25, 12, 55),
+            Color.rgb(4, 9, 22)
         )
-
-        status.addView(statusTop)
-
-        status.addView(
-            tv(
-                "Wake word: \"Hey AERON\"",
-                12f,
-                muted,
-                Typeface.NORMAL
-            )
-        )
-
-        content.addView(status)
-
-        content.addView(space(18))
-
-        content.addView(
-            tv(
-                "QUICK ACTIONS",
-                11f,
-                muted,
-                Typeface.BOLD
-            ).apply {
-                letterSpacing = 0.16f
-            }
-        )
-
-        content.addView(space(10))
-
-        val row1 = LinearLayout(this)
-        row1.orientation = LinearLayout.HORIZONTAL
-
-        row1.addView(
-            actionCard(
-                "⌕",
-                "Search",
-                "Find anything"
-            ) {
-                showChat("Search the web for ")
-            }
-        )
-
-        row1.addView(space(10))
-
-        row1.addView(
-            actionCard(
-                "◈",
-                "Create",
-                "Generate media"
-            ) {
-                showCreate()
-            }
-        )
-
-        content.addView(row1)
-
-        content.addView(space(10))
-
-        val row2 = LinearLayout(this)
-        row2.orientation = LinearLayout.HORIZONTAL
-
-        row2.addView(
-            actionCard(
-                "◉",
-                "Voice",
-                "Talk to AERON"
-            ) {
-                showVoice()
-            }
-        )
-
-        row2.addView(space(10))
-
-        row2.addView(
-            actionCard(
-                "▣",
-                "Files",
-                "Analyze files"
-            ) {
-                toast("File analysis coming next")
-            }
-        )
-
-        content.addView(row2)
-
-        content.addView(space(20))
-
-        content.addView(
-            tv(
-                "RECENT",
-                11f,
-                muted,
-                Typeface.BOLD
-            ).apply {
-                letterSpacing = 0.16f
-            }
-        )
-
-        content.addView(space(10))
-
-        recent(
-            "Welcome to AERON",
-            "Your futuristic AI companion",
-            "Today"
-        )
-
-        recent(
-            "AERON CORE",
-            "Ready for your next command",
-            "Today"
-        )
+    ).apply {
+        cornerRadius = dp(30).toFloat()
+        setStroke(dp(1), Color.rgb(35, 70, 115))
     }
+
+    // Outer glow ring
+    val glowRing = TextView(this)
+    glowRing.background = GradientDrawable().apply {
+        shape = GradientDrawable.OVAL
+        setColor(Color.TRANSPARENT)
+        setStroke(dp(2), Color.rgb(0, 190, 255))
+    }
+
+    orbBox.addView(
+        glowRing,
+        FrameLayout.LayoutParams(
+            dp(185),
+            dp(185)
+        ).apply {
+            gravity = Gravity.CENTER
+        }
+    )
+
+    // Main orb
+    val orb = TextView(this)
+    orb.text = "A"
+    orb.gravity = Gravity.CENTER
+    orb.textSize = 60f
+    orb.setTextColor(white)
+    orb.typeface = Typeface.DEFAULT_BOLD
+
+    orb.background = GradientDrawable(
+        GradientDrawable.Orientation.TL_BR,
+        intArrayOf(
+            Color.rgb(0, 190, 255),
+            Color.rgb(90, 70, 255),
+            Color.rgb(160, 60, 255)
+        )
+    ).apply {
+        shape = GradientDrawable.OVAL
+        setStroke(dp(2), Color.WHITE)
+    }
+
+    orb.elevation = dp(20).toFloat()
+
+    orbBox.addView(
+        orb,
+        FrameLayout.LayoutParams(
+            dp(145),
+            dp(145)
+        ).apply {
+            gravity = Gravity.CENTER
+        }
+    )
+
+    val core = tv(
+        "AERON CORE",
+        10f,
+        cyan,
+        Typeface.BOLD
+    )
+
+    core.gravity = Gravity.CENTER
+    core.letterSpacing = 0.22f
+
+    orbBox.addView(
+        core,
+        FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            gravity = Gravity.BOTTOM
+            bottomMargin = dp(25)
+        }
+    )
+
+    content.addView(orbBox)
+
+    content.addView(space(18))
+
+    // STATUS
+    val status = LinearLayout(this)
+    status.orientation = LinearLayout.HORIZONTAL
+    status.gravity = Gravity.CENTER_VERTICAL
+    status.setPadding(dp(16), dp(13), dp(16), dp(13))
+
+    status.background = rounded(
+        surface,
+        18,
+        dp(1),
+        Color.rgb(28, 52, 82)
+    )
+
+    val dot = tv(
+        "●",
+        11f,
+        green,
+        Typeface.BOLD
+    )
+
+    status.addView(dot)
+    status.addView(space(8))
+
+    status.addView(
+        tv(
+            "AERON is ready",
+            13f,
+            text,
+            Typeface.BOLD
+        )
+    )
+
+    val wake = tv(
+        "Hey AERON",
+        11f,
+        muted,
+        Typeface.NORMAL
+    )
+    wake.gravity = Gravity.CENTER_VERTICAL
+
+    status.addView(
+        wake,
+        LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            1f
+        ).apply {
+            gravity = Gravity.END
+        }
+    )
+
+    content.addView(status)
+
+    content.addView(space(22))
+
+    // QUICK ACTIONS
+    content.addView(
+        tv(
+            "QUICK ACTIONS",
+            10f,
+            muted,
+            Typeface.BOLD
+        ).apply {
+            letterSpacing = 0.18f
+        }
+    )
+
+    content.addView(space(10))
+
+    val actions = LinearLayout(this)
+    actions.orientation = LinearLayout.HORIZONTAL
+
+    actions.addView(
+        actionCard(
+            "⌕",
+            "Search",
+            "Web",
+        ) {
+            showChat("Search the web for ")
+        }
+    )
+
+    actions.addView(space(8))
+
+    actions.addView(
+        actionCard(
+            "◇",
+            "Image",
+            "Create",
+        ) {
+            showCreate()
+        }
+    )
+
+    actions.addView(space(8))
+
+    actions.addView(
+        actionCard(
+            "▶",
+            "Video",
+            "Create",
+        ) {
+            showCreate()
+        }
+    )
+
+    actions.addView(space(8))
+
+    actions.addView(
+        actionCard(
+            "▣",
+            "File",
+            "Analyze",
+        ) {
+            toast("File analysis coming next")
+        }
+    )
+
+    content.addView(actions)
+
+    content.addView(space(22))
+
+    // RECENT
+    content.addView(
+        tv(
+            "RECENT CHATS",
+            10f,
+            muted,
+            Typeface.BOLD
+        ).apply {
+            letterSpacing = 0.18f
+        }
+    )
+
+    content.addView(space(10))
+
+    recent(
+        "Welcome to AERON",
+        "Your futuristic AI companion",
+        "Today"
+    )
+
+    recent(
+        "AERON CORE",
+        "Ready for your next command",
+        "Today"
+    )
+    }
+
 
     // ============================================================
     // CHAT
