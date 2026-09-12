@@ -8,36 +8,445 @@ import android.os.Bundle
 import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.sin
 
 class MainActivity : AppCompatActivity() {
-    private val bg=Color.rgb(3,7,18); private val panel=Color.rgb(8,14,28)
-    private val cyan=Color.rgb(56,189,248); private val purple=Color.rgb(168,85,247)
-    private val blue=Color.rgb(59,130,246); private val green=Color.rgb(16,185,129)
-    private val white=Color.WHITE; private val muted=Color.rgb(100,116,139)
-    private lateinit var content:LinearLayout
-    override fun onCreate(b:Bundle?){super.onCreate(b);window.statusBarColor=bg;window.navigationBarColor=bg;build();home()}
-    private fun build(){val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(bg)};content=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(18),dp(12),dp(18),dp(18))};root.addView(ScrollView(this).apply{isFillViewport=true;addView(content)},LinearLayout.LayoutParams(-1,0,1f));root.addView(nav());setContentView(root)}
-    private fun header():View{return LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(10),dp(7),dp(8),dp(7));background=round(Color.rgb(11,17,32),30,Color.rgb(30,41,59));addView(TextView(this@MainActivity).apply{text="A";gravity=Gravity.CENTER;textSize=16f;setTextColor(Color.BLACK);typeface=Typeface.DEFAULT_BOLD;background=grad(cyan,purple)},LinearLayout.LayoutParams(dp(36),dp(36)));addView(LinearLayout(this@MainActivity).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(10),0,0,0);addView(tv("AERON",15f,white));addView(tv("AI COMPANION • CORE",9f,cyan))},LinearLayout.LayoutParams(0,-2,1f));addView(tv("✦",20f,cyan),LinearLayout.LayoutParams(dp(38),dp(38)));addView(TextView(this@MainActivity).apply{text="A";gravity=Gravity.CENTER;textSize=12f;setTextColor(white);background=round(Color.TRANSPARENT,50,cyan)},LinearLayout.LayoutParams(dp(32),dp(32)))}}
-    private fun home(){clear();content.addView(header());content.addView(space(18));content.addView(tv("Good day.",13f,cyan));content.addView(space(4));content.addView(tv("How can AERON help?",27f,white));content.addView(space(16));content.addView(Orb(this),LinearLayout.LayoutParams(-1,dp(245)));content.addView(space(14));val s=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(16),dp(14),dp(16),dp(12));background=round(panel,20,Color.rgb(30,41,59))};s.addView(tv("●  AERON is ready",13f,green));s.addView(tv("Wake word: Hey AERON",11f,muted));s.addView(Wave(this),LinearLayout.LayoutParams(-1,dp(25)));content.addView(s);content.addView(space(20));content.addView(tv("QUICK ACTIONS",10f,muted));content.addView(space(10));row(action("⌕","Search","Find anything"){chat()},action("◇","Create","Generate media"){create()});row(action("◉","Voice","Talk to AERON"){voice()},action("▣","Files","Analyze files"){toast("File analysis ready")});content.addView(space(20));content.addView(tv("RECENT",10f,muted));content.addView(space(9));item("✦","Welcome to AERON","Your AI companion","Now")}
-    private fun chat(){clear();content.addView(header());content.addView(space(20));content.addView(tv("CHAT",25f,white));content.addView(tv("Intelligent conversation",12f,muted));content.addView(space(18));content.addView(card("✦  I'm ready. What would you like to do?"));content.addView(space(12));item("✦","Ask anything","Get an intelligent answer","");item("⌕","Search the web","Get current information","");item("◇","Create media","Generate images and video","")}
-    private fun voice(){clear();content.addView(header());content.addView(space(20));content.addView(tv("VOICE",25f,white));content.addView(tv("Talk naturally with AERON",12f,muted));content.addView(space(18));content.addView(Orb(this,true),LinearLayout.LayoutParams(-1,dp(310)));content.addView(space(14));content.addView(card("WAKE WORD\n\nHey AERON\n\nBackground wake-word detection is configured with your AERON model."))}
-    private fun create(){clear();content.addView(header());content.addView(space(20));content.addView(tv("CREATE",25f,white));content.addView(tv("Bring your ideas to life",12f,muted));content.addView(space(18));item("✦","Image","Generate stunning visuals","");item("▶","Video","Create AI video","");item("◇","Edit","Transform your media","")}
-    private fun memory(){clear();content.addView(tv("MEMORY",25f,white));content.addView(tv("Your AERON memory vault",12f,muted));content.addView(space(18));content.addView(card("MEMORY VAULT\n\nManage information AERON remembers about your conversations and preferences."));content.addView(space(12));item("◇","Preferences","Personal preferences","");item("✦","Conversations","Remembered context","");item("◉","Privacy","Control what AERON remembers","")}
-    private fun settings(){clear();content.addView(tv("SETTINGS",25f,white));content.addView(tv("Customize your AERON experience",12f,muted));section("ACCOUNT","Account","Google, Facebook or phone");section("AERON CORE","AERON CORE","Personality and intelligence");section("VOICE & WAKE WORD","Voice & Wake Word","Hey AERON detection");section("APPEARANCE","Appearance","Theme and visual experience");section("MEMORY","Memory","Manage Memory Vault");section("PRIVACY","Privacy & Security","Data and permissions")}
-    private fun section(sec:String,title:String,sub:String){content.addView(space(12));content.addView(tv(sec,9f,cyan));content.addView(space(7));item("›",title,sub,"")}
-    private fun nav():View{return LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;setPadding(dp(8),dp(5),dp(8),dp(7));setBackgroundColor(bg);addView(n("⌂","Home"){home()});addView(n("✦","Chat"){chat()});addView(n("◉","Voice"){voice()});addView(n("◇","Memory"){memory()});addView(n("☰","Settings"){settings()})}}
-    private fun n(i:String,t:String,a:()->Unit)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;setOnClickListener{a()};addView(tv(i,19f,cyan));addView(tv(t,9f,muted));layoutParams=LinearLayout.LayoutParams(0,dp(55),1f)}
-    private fun row(a:View,b:View){val r=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL};r.addView(a);r.addView(space(10,1));r.addView(b);content.addView(r);content.addView(space(10))}
-    private fun action(i:String,t:String,d:String,a:()->Unit)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(15),dp(14),dp(12),dp(12));background=round(panel,18,Color.rgb(30,41,59));setOnClickListener{a()};addView(tv(i,21f,cyan));addView(space(8));addView(tv(t,14f,white));addView(tv(d,10f,muted));layoutParams=LinearLayout.LayoutParams(0,dp(112),1f)}
-    private fun item(i:String,t:String,s:String,time:String){val r=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(14),dp(12),dp(14),dp(12));background=round(panel,17,Color.rgb(30,41,59))};r.addView(tv(i,18f,cyan),LinearLayout.LayoutParams(dp(30),dp(30)));r.addView(LinearLayout(this@MainActivity).apply{orientation=LinearLayout.VERTICAL;addView(tv(t,13f,white));addView(tv(s,10f,muted))},LinearLayout.LayoutParams(0,-2,1f));if(time.isNotEmpty())r.addView(tv(time,9f,muted));val p=LinearLayout.LayoutParams(-1,-2);p.bottomMargin=dp(9);content.addView(r,p)}
-    private fun card(s:String)=TextView(this).apply{text=s;textSize=14f;setTextColor(Color.rgb(203,213,225));setPadding(dp(17),dp(17),dp(17),dp(17));background=round(panel,20,Color.rgb(30,41,59))}
-    private fun tv(s:String,z:Float,c:Int)=TextView(this).apply{text=s;textSize=z;setTextColor(c);typeface=Typeface.create("sans-serif",Typeface.BOLD);includeFontPadding=false;gravity=Gravity.CENTER_VERTICAL}
-    private fun space(n:Int,w:Int=0)=Space(this).apply{layoutParams=LinearLayout.LayoutParams(dp(n),if(w==1)1 else dp(n))}
-    private fun round(c:Int,r:Int,stroke:Int)=GradientDrawable().apply{setColor(c);cornerRadius=dp(r).toFloat();if(stroke!=0)setStroke(dp(1),stroke)}
-    private fun grad(a:Int,b:Int)=GradientDrawable(GradientDrawable.Orientation.TL_BR,intArrayOf(a,b)).apply{shape=GradientDrawable.OVAL}
-    private fun clear(){content.removeAllViews()};private fun dp(v:Int)= (v*resources.displayMetrics.density).toInt();private fun toast(s:String)=Toast.makeText(this,s,Toast.LENGTH_SHORT).show()
-    private class Wave(c:Context):View(c){val p=Paint(1);var t=0f;init{p.color=Color.rgb(56,189,248);ValueAnimator.ofFloat(0f,1f).apply{duration=1100;repeatCount=-1;addUpdateListener{t=it.animatedValue as Float;invalidate()};start()}}override fun onDraw(c:Canvas){for(i in 0..17){val h=(5+15*(.5+.5*sin(i*.9+t*Math.PI*2))).toFloat();val x=width/(20f)*(i+1);c.drawRoundRect(x,height-h,x+4,height.toFloat(),3f,3f,p)}}}
-    private class Orb(c:Context,val listen:Boolean=false):View(c){val p=Paint(1);var t=0f;init{ValueAnimator.ofFloat(0f,1f).apply{duration=3200;repeatCount=-1;addUpdateListener{t=it.animatedValue as Float;invalidate()};start()}}override fun onDraw(c:Canvas){val x=width/2f;val y=height/2f-8;val r=minOf(width,height)*.36f;p.shader=RadialGradient(x,y,r*1.8f,intArrayOf(Color.rgb(25,30,75),Color.rgb(5,8,20),Color.TRANSPARENT),null,Shader.TileMode.CLAMP);c.drawRect(0f,0f,width.toFloat(),height.toFloat(),p);p.shader=null;for(i in 0..3){p.style=Paint.Style.STROKE;p.strokeWidth=if(i==0)2.3f else 1.1f;p.color=if(i%2==0)Color.rgb(0,242,254) else Color.rgb(99,102,241);p.alpha=210-i*35;c.drawCircle(x,y,r*(.72f+i*.16f)+sin(t*6+i)*4,p)};val core=r*.58f;p.style=Paint.Style.FILL;p.alpha=255;p.shader=LinearGradient(x-core,y-core,x+core,y+core,intArrayOf(Color.rgb(59,130,246),Color.rgb(168,85,247)),null,Shader.TileMode.CLAMP);c.drawCircle(x,y,core,p);p.shader=null;p.style=Paint.Style.STROKE;p.strokeWidth=2f;p.color=Color.WHITE;c.drawCircle(x,y,core,p);p.style=Paint.Style.FILL;p.color=Color.WHITE;p.textSize=core*.58f;p.typeface=Typeface.DEFAULT_BOLD;p.textAlign=Paint.Align.CENTER;c.drawText("A",x,y+core*.2f,p);p.textSize=10f;p.color=Color.rgb(56,189,248);c.drawText(if(listen)"AERON LISTENING" else "AERON CORE",x,height-20f,p)}}
+
+    private val bg = Color.rgb(3, 7, 18)
+    private val panel = Color.rgb(10, 17, 32)
+    private val panel2 = Color.rgb(13, 20, 39)
+    private val cyan = Color.rgb(0, 229, 168)
+    private val blue = Color.rgb(72, 104, 255)
+    private val purple = Color.rgb(139, 76, 255)
+    private val white = Color.rgb(242, 246, 255)
+    private val muted = Color.rgb(139, 151, 177)
+
+    private lateinit var root: FrameLayout
+    private lateinit var content: LinearLayout
+    private lateinit var title: TextView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window.statusBarColor = bg
+        window.navigationBarColor = bg
+        showHome()
+    }
+
+    private fun baseScreen(screenTitle: String) {
+        root = FrameLayout(this)
+        root.setBackgroundColor(bg)
+
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
+
+        content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(18), dp(18), dp(104))
+        }
+
+        scroll.addView(content)
+        root.addView(scroll, FrameLayout.LayoutParams(-1, -1))
+
+        val bottom = bottomNav()
+        val bottomLp = FrameLayout.LayoutParams(-1, dp(76), Gravity.BOTTOM)
+        root.addView(bottom, bottomLp)
+
+        setContentView(root)
+
+        if (screenTitle.isNotEmpty()) {
+            title = tv(screenTitle, 22f, white, true)
+            content.addView(title, LinearLayout.LayoutParams(-1, -2).apply {
+                bottomMargin = dp(18)
+            })
+        }
+    }
+
+    private fun showHome() {
+        baseScreen("")
+
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(9), dp(10), dp(9))
+            background = rounded(panel2, 28)
+        }
+
+        val logo = textCircle("A", 36, cyan)
+        header.addView(logo)
+
+        val headText = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), 0, 0, 0)
+        }
+        headText.addView(tv("AERON", 15f, white, true))
+        headText.addView(tv("AI COMPANION  •  CORE", 9f, cyan, false))
+
+        header.addView(headText, LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(tv("✦", 22f, white, true))
+        header.addView(textCircle("A", 32, blue))
+
+        content.addView(header, LinearLayout.LayoutParams(-1, -2).apply {
+            bottomMargin = dp(28)
+        })
+
+        content.addView(tv("Good day.", 15f, muted, false))
+        content.addView(tv("How can AERON help?", 28f, white, true), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(2)
+            bottomMargin = dp(20)
+        })
+
+        val orb = CoreOrbView(this)
+        content.addView(orb, LinearLayout.LayoutParams(-1, dp(286)).apply {
+            bottomMargin = dp(14)
+        })
+
+        val ready = card()
+        ready.setPadding(dp(16), dp(14), dp(16), dp(14))
+        val readyTop = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        readyTop.addView(dot(cyan))
+        readyTop.addView(tv("AERON is ready", 14f, white, true), LinearLayout.LayoutParams(0, -2, 1f).apply {
+            leftMargin = dp(8)
+        })
+        readyTop.addView(tv("ONLINE", 9f, cyan, true))
+        ready.addView(readyTop)
+        ready.addView(tv("Wake word:  Hey AERON", 11f, muted, false), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(7)
+        })
+        ready.addView(WaveView(this), LinearLayout.LayoutParams(-1, dp(30)).apply {
+            topMargin = dp(6)
+        })
+        content.addView(ready, LinearLayout.LayoutParams(-1, -2).apply {
+            bottomMargin = dp(24)
+        })
+
+        content.addView(sectionTitle("QUICK ACTIONS"))
+        val grid = GridLayout(this).apply {
+            columnCount = 2
+            rowCount = 2
+        }
+        grid.addView(action("⌕", "Search", "Find anything", { showChat("Search") }))
+        grid.addView(action("✦", "Create", "Generate media", { showCreate() }))
+        grid.addView(action("◉", "Voice", "Talk to AERON", { showVoice() }))
+        grid.addView(action("▣", "Files", "Analyze files", { showChat("Files") }))
+        content.addView(grid, LinearLayout.LayoutParams(-1, -2).apply {
+            bottomMargin = dp(26)
+        })
+
+        content.addView(sectionTitle("RECENT"))
+        recent("Welcome to AERON", "Start a conversation with your AI companion.")
+        recent("AERON CORE", "Your intelligent assistant is ready.")
+        recent("Voice assistant", "Wake word: Hey AERON")
+    }
+
+    private fun showChat(mode: String = "") {
+        baseScreen("AERON")
+
+        content.addView(tv(if (mode.isEmpty()) "What would you like to know?" else "$mode with AERON", 26f, white, true))
+        content.addView(tv("Ask anything. AERON will choose the right tools automatically.", 13f, muted, false),
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(26) })
+
+        val bubble = card()
+        bubble.setPadding(dp(16), dp(16), dp(16), dp(16))
+        bubble.addView(tv("AERON", 11f, cyan, true))
+        bubble.addView(tv("I'm ready. Tell me what you need.", 16f, white, false),
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        content.addView(bubble, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+
+        val input = EditText(this).apply {
+            hint = "Message AERON…"
+            hintTextColor = muted
+            setTextColor(white)
+            textSize = 15f
+            singleLine = false
+            minHeight = dp(58)
+            setPadding(dp(18), dp(12), dp(18), dp(12))
+            background = rounded(panel2, 20)
+        }
+        content.addView(input, LinearLayout.LayoutParams(-1, dp(62)).apply { bottomMargin = dp(14) })
+
+        val send = Button(this).apply {
+            text = "SEND  ›"
+            textSize = 12f
+            setTextColor(bg)
+            background = rounded(cyan, 18)
+            setOnClickListener {
+                Toast.makeText(this@MainActivity, "Message ready for AERON", Toast.LENGTH_SHORT).show()
+            }
+        }
+        content.addView(send, LinearLayout.LayoutParams(-1, dp(52)))
+    }
+
+    private fun showVoice() {
+        baseScreen("AERON LISTENING")
+        content.addView(tv("Speak naturally. AERON is listening.", 14f, muted, false))
+        content.addView(CoreOrbView(this, true), LinearLayout.LayoutParams(-1, dp(330)).apply {
+            topMargin = dp(12)
+            bottomMargin = dp(14)
+        })
+        val c = card()
+        c.setPadding(dp(18), dp(18), dp(18), dp(18))
+        c.addView(tv("WAKE WORD", 10f, cyan, true))
+        c.addView(tv("Hey AERON", 22f, white, true), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(5)
+        })
+        c.addView(tv("The assistant can stay ready in the background when wake-word detection is active.", 12f, muted, false),
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+        content.addView(c)
+    }
+
+    private fun showCreate() {
+        baseScreen("CREATE")
+        content.addView(tv("Generate images, video and creative content with AERON.", 14f, muted, false),
+            LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(24) })
+        content.addView(bigAction("✦", "Image Generation", "Create visuals from your idea."))
+        content.addView(bigAction("▶", "Video Generation", "Turn ideas into moving scenes."))
+        content.addView(bigAction("⌁", "Edit Media", "Transform an existing image or file."))
+    }
+
+    private fun showMemory() {
+        baseScreen("MEMORY & PRIVACY")
+        content.addView(bigAction("◈", "Memory Vault", "Control what AERON remembers."))
+        content.addView(bigAction("⌁", "Chat History", "Review or manage conversations."))
+        content.addView(bigAction("◉", "Privacy", "Manage data and personalization."))
+    }
+
+    private fun showSettings() {
+        baseScreen("SETTINGS")
+        content.addView(bigAction("◉", "AERON CORE", "Assistant intelligence and behavior."))
+        content.addView(bigAction("◌", "Voice & Wake Word", "Voice output and Hey AERON."))
+        content.addView(bigAction("◐", "Appearance", "Theme and visual experience."))
+        content.addView(bigAction("文", "Language & Region", "Choose your language."))
+        content.addView(bigAction("ⓘ", "About AERON", "Version and project information."))
+    }
+
+    private fun showAccount() {
+        baseScreen("ACCOUNT")
+        val c = card()
+        c.setPadding(dp(18), dp(18), dp(18), dp(18))
+        c.addView(textCircle("A", 58, cyan))
+        c.addView(tv("AERON USER", 20f, white, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+        c.addView(tv("Your personal AI companion", 12f, muted, false), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        content.addView(c)
+    }
+
+    private fun bottomNav(): View {
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            background = rounded(Color.rgb(6, 12, 24), 24)
+        }
+        navItem(bar, "⌂", "Home") { showHome() }
+        navItem(bar, "⌕", "Chat") { showChat() }
+        navItem(bar, "✦", "Create") { showCreate() }
+        navItem(bar, "◈", "Memory") { showMemory() }
+        navItem(bar, "⚙", "Settings") { showSettings() }
+        return bar
+    }
+
+    private fun navItem(parent: LinearLayout, icon: String, label: String, click: () -> Unit) {
+        val b = TextView(this).apply {
+            text = "$icon\n$label"
+            gravity = Gravity.CENTER
+            textSize = 10f
+            setTextColor(muted)
+            setPadding(0, dp(3), 0, dp(2))
+            setOnClickListener { click() }
+        }
+        parent.addView(b, LinearLayout.LayoutParams(0, -1, 1f))
+    }
+
+    private fun action(icon: String, name: String, sub: String, click: () -> Unit): View {
+        val c = card().apply {
+            setPadding(dp(14), dp(14), dp(12), dp(14))
+            setOnClickListener { click() }
+        }
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        row.addView(tv(icon, 22f, cyan, true), LinearLayout.LayoutParams(dp(30), -1))
+        val t = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        t.addView(tv(name, 14f, white, true))
+        t.addView(tv(sub, 10f, muted, false), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
+        row.addView(t)
+        c.addView(row)
+        return GridLayout.LayoutParams().apply {
+            width = 0
+            height = dp(84)
+            columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+            setMargins(dp(4), dp(4), dp(4), dp(4))
+        }.let { lp ->
+            FrameLayout(this).apply {
+                addView(c, FrameLayout.LayoutParams(-1, -1))
+                layoutParams = lp
+            }
+        }
+    }
+
+    private fun bigAction(icon: String, name: String, sub: String) {
+        val c = card().apply { setPadding(dp(16), dp(15), dp(16), dp(15)) }
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        row.addView(tv(icon, 25f, cyan, true), LinearLayout.LayoutParams(dp(42), dp(48)))
+        val t = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        t.addView(tv(name, 15f, white, true))
+        t.addView(tv(sub, 11f, muted, false), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        row.addView(t, LinearLayout.LayoutParams(0, -2, 1f))
+        row.addView(tv("›", 24f, muted, false))
+        c.addView(row)
+        content.addView(c, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+    }
+
+    private fun recent(name: String, sub: String) {
+        val c = card().apply { setPadding(dp(14), dp(13), dp(14), dp(13)) }
+        c.addView(tv(name, 14f, white, true))
+        c.addView(tv(sub, 11f, muted, false), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        content.addView(c, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+    }
+
+    private fun sectionTitle(s: String) =
+        tv(s, 10f, muted, true).apply {
+            letterSpacing = .14f
+            setPadding(dp(2), 0, 0, dp(6))
+        }
+
+    private fun card(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        background = rounded(panel, 20)
+    }
+
+    private fun dot(color: Int): View = View(this).apply {
+        background = rounded(color, 50)
+    }.also { it.layoutParams = LinearLayout.LayoutParams(dp(8), dp(8)) }
+
+    private fun textCircle(text: String, size: Int, color: Int): TextView =
+        TextView(this).apply {
+            this.text = text
+            textSize = (size * .40f)
+            gravity = Gravity.CENTER
+            setTextColor(bg)
+            typeface = Typeface.DEFAULT_BOLD
+            background = rounded(color, 50)
+            layoutParams = LinearLayout.LayoutParams(dp(size), dp(size))
+        }
+
+    private fun tv(text: String, size: Float, color: Int, bold: Boolean): TextView =
+        TextView(this).apply {
+            this.text = text
+            textSize = size
+            setTextColor(color)
+            typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+        }
+
+    private fun rounded(color: Int, radius: Int): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radius).toFloat()
+        }
+
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    private class CoreOrbView(context: Context, private val listening: Boolean = false) : View(context) {
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private var phase = 0f
+        private val cyan = Color.rgb(0, 229, 168)
+        private val blue = Color.rgb(67, 100, 255)
+        private val purple = Color.rgb(143, 70, 255)
+
+        init {
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+            ValueAnimator.ofFloat(0f, 360f).apply {
+                duration = 9000
+                repeatCount = ValueAnimator.INFINITE
+                addUpdateListener {
+                    phase = it.animatedValue as Float
+                    invalidate()
+                }
+                start()
+            }
+        }
+
+        override fun onDraw(c: Canvas) {
+            super.onDraw(c)
+            val cx = width / 2f
+            val cy = height / 2f
+            val r = min(width, height) * .27f
+
+            paint.style = Paint.Style.FILL
+            paint.shader = RadialGradient(cx, cy, r * 2.0f,
+                intArrayOf(Color.argb(95, 40, 90, 255), Color.argb(35, 0, 229, 168), Color.TRANSPARENT),
+                null, Shader.TileMode.CLAMP)
+            c.drawCircle(cx, cy, r * 2.0f, paint)
+            paint.shader = null
+
+            paint.style = Paint.Style.STROKE
+            for (i in 0..4) {
+                val rr = r + i * 18f
+                paint.strokeWidth = if (i == 0) 2.5f else 1.1f
+                paint.color = if (i % 2 == 0) Color.argb(170, 0, 229, 168) else Color.argb(110, 92, 108, 255)
+                paint.setShadowLayer(13f, 0f, 0f, paint.color)
+                val sweep = 250f + (i * 25f)
+                c.save()
+                c.rotate(phase * (if (i % 2 == 0) 1f else -0.7f), cx, cy)
+                c.drawArc(cx - rr, cy - rr, cx + rr, cy + rr, -45f, sweep, false, paint)
+                c.restore()
+                paint.clearShadowLayer()
+            }
+
+            paint.style = Paint.Style.FILL
+            paint.shader = LinearGradient(cx-r, cy-r, cx+r, cy+r,
+                intArrayOf(blue, purple, Color.rgb(24, 47, 110)),
+                null, Shader.TileMode.CLAMP)
+            paint.setShadowLayer(35f, 0f, 0f, Color.argb(180, 54, 91, 255))
+            c.drawCircle(cx, cy, r, paint)
+            paint.clearShadowLayer()
+            paint.shader = null
+
+            paint.color = Color.WHITE
+            paint.textAlign = Paint.Align.CENTER
+            paint.typeface = Typeface.DEFAULT_BOLD
+            paint.textSize = r * .72f
+            c.drawText("A", cx, cy + r * .25f, paint)
+
+            paint.textSize = 11f
+            paint.color = cyan
+            c.drawText(if (listening) "AERON LISTENING" else "AERON CORE", cx, cy + r + 48f, paint)
+        }
+    }
+
+    private class WaveView(context: Context) : View(context) {
+        private val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        private var phase = 0f
+        init {
+            p.strokeWidth = 3f
+            p.strokeCap = Paint.Cap.ROUND
+            ValueAnimator.ofFloat(0f, 6.28f).apply {
+                duration = 1200
+                repeatCount = ValueAnimator.INFINITE
+                addUpdateListener { phase = it.animatedValue as Float; invalidate() }
+                start()
+            }
+        }
+        override fun onDraw(c: Canvas) {
+            super.onDraw(c)
+            p.color = Color.rgb(0,229,168)
+            p.style = Paint.Style.STROKE
+            val cy = height / 2f
+            var lastX = 0f
+            var lastY = cy
+            for (i in 0..80) {
+                val x = width * i / 80f
+                val amp = 3f + 8f * kotlin.math.abs(sin(i * .42 + phase))
+                val y = cy + sin(i * .55 + phase) * amp
+                if (i > 0) c.drawLine(lastX, lastY, x, y, p)
+                lastX = x
+                lastY = y
+            }
+        }
+    }
 }
