@@ -39,101 +39,105 @@ class MainActivity : AppCompatActivity() {
     // ============================================================
     // SHELL
     // ============================================================
+private fun buildShell() {
 
-    private fun buildShell() {
+    root = FrameLayout(this)
+    root.setBackgroundColor(bg)
 
-        root = FrameLayout(this)
-        root.setBackgroundColor(bg)
+    val main = LinearLayout(this)
+    main.orientation = LinearLayout.VERTICAL
+    main.setBackgroundColor(bg)
 
-        val main = LinearLayout(this)
-        main.orientation = LinearLayout.VERTICAL
-        main.setBackgroundColor(bg)
-
-        root.addView(
-            main,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
+    root.addView(
+        main,
+        FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
         )
+    )
 
-        val header = LinearLayout(this)
-        header.orientation = LinearLayout.HORIZONTAL
-        header.gravity = Gravity.CENTER_VERTICAL
-        header.setPadding(dp(20), dp(16), dp(20), dp(10))
+    // AERON TOP BAR — transparent, no white box
+    val header = LinearLayout(this)
+    header.orientation = LinearLayout.HORIZONTAL
+    header.gravity = Gravity.CENTER_VERTICAL
+    header.setPadding(dp(20), dp(10), dp(20), dp(8))
+    header.setBackgroundColor(Color.TRANSPARENT)
 
-        val brand = LinearLayout(this)
-        brand.orientation = LinearLayout.VERTICAL
+    val brand = LinearLayout(this)
+    brand.orientation = LinearLayout.VERTICAL
 
-        val title = tv(
-            "AERON",
-            22f,
-            white,
-            Typeface.BOLD
+    val title = tv(
+        "AERON",
+        20f,
+        white,
+        Typeface.BOLD
+    )
+
+    val subtitle = tv(
+        "AI ASSISTANT",
+        9f,
+        cyan,
+        Typeface.BOLD
+    )
+    subtitle.letterSpacing = 0.18f
+
+    brand.addView(title)
+    brand.addView(subtitle)
+
+    header.addView(
+        brand,
+        LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            1f
         )
+    )
 
-        val subtitle = tv(
-            "AERON CORE",
-            10f,
-            cyan,
-            Typeface.BOLD
-        )
-        subtitle.letterSpacing = 0.18f
-
-        brand.addView(title)
-        brand.addView(
-            subtitle,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-
-        header.addView(
-            brand,
-            LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
-            )
-        )
-
-        val notification = circleButton("✦")
-        notification.setOnClickListener {
-            toast("AERON notifications")
-        }
-
-        val profile = circleButton("A")
-        profile.setOnClickListener {
-            showAccount()
-        }
-
-        header.addView(notification)
-        header.addView(space(8))
-        header.addView(profile)
-
-        main.addView(header)
-
-        content = LinearLayout(this)
-        content.orientation = LinearLayout.VERTICAL
-        content.setPadding(dp(18), dp(4), dp(18), dp(8))
-
-        val scroll = ScrollView(this)
-        scroll.isFillViewport = true
-        scroll.addView(content)
-
-        main.addView(
-            scroll,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
-        )
-
-        main.addView(bottomNavigation())
-        setContentView(root)
+    val profile = circleButton("A")
+    profile.setOnClickListener {
+        showAccount()
     }
+
+    header.addView(profile)
+
+    main.addView(
+        header,
+        LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(62)
+        )
+    )
+
+    // CONTENT
+    content = LinearLayout(this)
+    content.orientation = LinearLayout.VERTICAL
+    content.setPadding(
+        dp(18),
+        dp(8),
+        dp(18),
+        dp(12)
+    )
+
+    val scroll = ScrollView(this)
+    scroll.isFillViewport = true
+    scroll.setBackgroundColor(Color.TRANSPARENT)
+    scroll.addView(content)
+
+    main.addView(
+        scroll,
+        LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            0,
+            1f
+        )
+    )
+
+    // BOTTOM NAVIGATION
+    main.addView(bottomNavigation())
+
+    setContentView(root)
+}
+    (
 
     // ============================================================
     // HOME
