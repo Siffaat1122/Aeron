@@ -452,7 +452,7 @@ class MainActivity : AppCompatActivity() {
         input.hint = "Message AERON..."
         input.setHintTextColor(muted)
         input.setTextColor(text)
-        input.textSize = 15
+        input.textSize = 15f
         input.setPadding(dp(16), 0, dp(10), 0)
         input.background = rounded(surface2, 26, dp(1), Color.rgb(36, 53, 85))
 
