@@ -136,7 +136,7 @@ private fun buildShell() {
     main.addView(bottomNavigation())
 
     setContentView(root)
-}
+
     (
 
     // ============================================================
