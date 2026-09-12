@@ -412,7 +412,7 @@ private fun buildShell() {
         "Ready for your next command",
         "Today"
     )
-    }
+    
 
 
     // ============================================================
