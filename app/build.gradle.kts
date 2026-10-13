@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.aeron" // Replace with your actual package namespace if different
+    namespace = "com.siffaat.aeron" // canonical package namespace
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.aeron" // Replace with your actual application ID if different
+        applicationId = "com.siffaat.aeron" // canonical application ID
         minSdk = 24
         targetSdk = 34
         versionCode = 1
